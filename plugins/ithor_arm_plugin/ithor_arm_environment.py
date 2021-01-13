@@ -18,10 +18,10 @@ from plugins.ithor_plugin.ithor_environment import IThorEnvironment
 from plugins.ithor_plugin.ithor_util import round_to_factor
 from plugins.ithor_plugin.ithor_constants import VISIBILITY_DISTANCE, FOV
 from utils.debugger_util import ForkedPdb
-from plugins.ithor_arm_plugin.ithor_arm_constants import ADITIONAL_ARM_ARGS, ARM_MIN_HEIGHT, ARM_MAX_HEIGHT, MOVE_ARM_HEIGHT_CONSTANT, MOVE_ARM_CONSTANT, BUILD_NUMBER
+from plugins.ithor_arm_plugin.ithor_arm_constants import ADITIONAL_ARM_ARGS, ARM_MIN_HEIGHT, ARM_MAX_HEIGHT, MOVE_ARM_HEIGHT_CONSTANT, MOVE_ARM_CONSTANT, ARM_BUILD_NUMBER
 
 
-class IThorKianaEnvironment(IThorEnvironment):
+class IThorMidLevelEnvironment(IThorEnvironment):
     """Wrapper for the ai2thor controller providing additional functionality
     and bookkeeping.
 
@@ -48,6 +48,7 @@ class IThorKianaEnvironment(IThorEnvironment):
         object_open_speed: float = 1.0,
         simplify_physics: bool = False,
         verbose: bool = False,
+        env_args = None,
     ) -> None:
         """Initializer.
 
@@ -62,8 +63,8 @@ class IThorKianaEnvironment(IThorEnvironment):
         visibility_distance : The distance (in meters) at which objects, in the viewport of the agent,
             are considered visible by ai2thor and will have their "visible" flag be set to `True` in the metadata.
         fov : The agent's camera's field of view.
-        player_screen_width : The width resolution (in pixels) of the images returned by ai2thor.
-        player_screen_height : The height resolution (in pixels) of the images returned by ai2thor.
+        width : The width resolution (in pixels) of the images returned by ai2thor.
+        height : The height resolution (in pixels) of the images returned by ai2thor.
         quality : The quality at which to render. Possible quality settings can be found in
             `ai2thor._quality_settings.QUALITY_SETTINGS`.
         restrict_to_initially_reachable_points : Whether or not to restrict the agent to locations in ai2thor
@@ -87,6 +88,7 @@ class IThorKianaEnvironment(IThorEnvironment):
         self._started = False
         self._quality = quality
         self._verbose = verbose
+        self.env_args = env_args
 
         self._initially_reachable_points: Optional[List[Dict]] = None
         self._initially_reachable_points_set: Optional[Set[Tuple[float, float]]] = None
@@ -108,18 +110,15 @@ class IThorKianaEnvironment(IThorEnvironment):
         # noinspection PyTypeHints
         self.controller.docker_enabled = docker_enabled  # type: ignore
     def check_controller_version(self):
-        if BUILD_NUMBER is not None:
-            assert BUILD_NUMBER in self.controller._build.url, 'Build number is not right'
+        if ARM_BUILD_NUMBER is not None:
+            assert ARM_BUILD_NUMBER in self.controller._build.url, 'Build number is not right'
 
 
     def create_controller(self):
-        return Controller(
-            x_display=self.x_display,
-            player_screen_width=self._start_player_screen_width,
-            player_screen_height=self._start_player_screen_height,
-            local_executable_path=self._local_thor_build,
-            quality=self._quality,
+        controller = Controller(
+            **self.env_args
         )
+        return controller
 
     def start(
         self, scene_name: Optional[str], move_mag: float = 0.25, **kwargs,
@@ -141,6 +140,7 @@ class IThorKianaEnvironment(IThorEnvironment):
 
 
         self.controller = self.create_controller()
+
 
         if (
             self._start_player_screen_height,
@@ -192,6 +192,7 @@ class IThorKianaEnvironment(IThorEnvironment):
                 )
             )
         self._initially_reachable_points = self.last_action_return
+        event = self.controller.step(action='MakeAllObjectsMoveable')
 
     def randomize_agent_location(
         self, seed: int = None, partial_position: Optional[Dict[str, float]] = None
@@ -233,84 +234,6 @@ class IThorKianaEnvironment(IThorEnvironment):
         else:
             raise AttributeError("Must be <= 1 inventory objects.")
 
-    def step(
-        self, action_dict: Dict[str, Union[str, int, float]]
-    ) -> ai2thor.server.Event:
-        """Take a step in the ai2thor environment."""
-        action = typing.cast(str, action_dict["action"])
-
-        skip_render = "renderImage" in action_dict and not action_dict["renderImage"]
-        last_frame: Optional[np.ndarray] = None
-        if skip_render:
-            last_frame = self.current_frame
-
-        if self.simplify_physics:
-            action_dict["simplifyOPhysics"] = True
-
-
-        action_dict['manualInteract'] = True
-
-
-
-        if 'Original' in action:
-            action.replace('Original', '')
-            action_dict['action'] = action
-
-        elif action in ['MoveAhead']:
-            action_dict['action'] = 'MoveAhead'
-            pass
-
-        elif action in ['RotateRight', 'RotateLeft']:
-            action_dict['degrees'] = 45
-
-        sr = self.controller.step(action_dict)
-
-        if self._verbose:
-            print('Step in env:', action, 'success', sr.metadata['lastActionSuccess'])
-
-        if self.restrict_to_initially_reachable_points:
-            self._snap_agent_to_initially_reachable()
-
-        if skip_render:
-            assert last_frame is not None
-            self.last_event.frame = last_frame
-
-        return sr
-
-class IThorMidLevelEnvironment(IThorKianaEnvironment):
-
-    def create_controller(self):
-        controller = Controller(
-            x_display=self.x_display,
-            player_screen_width=self._start_player_screen_width,
-            player_screen_height=self._start_player_screen_height,
-            local_executable_path=self._local_thor_build,
-            quality=self._quality,
-            agentMode='arm',
-            agentControllerType='mid-level',
-            useMassThreshold = True, massThreshold = 10,
-            server_class=ai2thor.fifo_server.FifoServer#, visibilityScheme='Distance',#For making way Faster
-        )
-        # event = controller.step(action='MakeAllObjectsMoveable')
-
-        return controller
-
-    def reset(
-            self, scene_name: Optional[str], move_mag: float = 0.25, **kwargs,
-    ):
-        super().reset(scene_name=scene_name, move_mag=move_mag, **kwargs)
-        event = self.controller.step(action='MakeAllObjectsMoveable')
-        # self.base_position = {'x':0, 'y': 0, 'z': 0, 'h': 0.4} # is this a good start? this will change based on current stuff
-
-
-    def finish_and_show_off(self):
-        event = self.controller.step(action='PickUpMidLevelHand')
-        if event.metadata['lastActionSuccess'] is False:
-            print('FAILED TO PICKUP FAILED TO PICKUP FAILED TO PICKUP')
-        base_position = self.get_current_arm_state()
-        self.controller.step(action='MoveMidLevelArmHeight', y=base_position['h'] + 0.1, speed = 1.0, returnToStart = False)# just to show it has been pick up
-
-
     def get_current_arm_state(self):
         h_min = ARM_MIN_HEIGHT
         h_max = ARM_MAX_HEIGHT
@@ -337,10 +260,6 @@ class IThorMidLevelEnvironment(IThorKianaEnvironment):
 
     def get_pickupable_objects(self):
 
-        # this decreases the fps by half
-        # event = self.controller.step(action='WhatObjectsCanHandPickUp')# remove this, it is just for the sake of being similar for now
-        # object_list = event.metadata['actionReturn']
-
         event = self.controller.last_event
         object_list = event.metadata['arm']['PickupableObjectsInsideHandSphere']
 
@@ -361,7 +280,6 @@ class IThorMidLevelEnvironment(IThorKianaEnvironment):
         else:
             print('PICKUP FAILED')
             return False
-
 
 
     def step(
@@ -405,11 +323,6 @@ class IThorMidLevelEnvironment(IThorKianaEnvironment):
 
         else:
             base_position = self.get_current_arm_state()
-            # action_dict['speed'] = 2 if DISABLERENDER else 1
-            # action_dict['returnToStart'] = False
-            # action_dict['disableRendering'] = False
-            # if DISABLERENDER:
-                # action_dict['disableRendering'] = True
             if 'MoveArmHeight' in action:
                 action_dict['action'] = 'MoveMidLevelArmHeight'
 
@@ -460,8 +373,8 @@ class IThorMidLevelDepthEnvironment(IThorMidLevelEnvironment):
                 x_display=self.x_display,
                 width=self._start_player_screen_width,
                 height=self._start_player_screen_height, #LATER_TODO change this everywhere
-                # player_screen_width=self._start_player_screen_width,
-                # player_screen_height=self._start_player_screen_height,
+                # width=self._start_player_screen_width,
+                # height=self._start_player_screen_height,
                 local_executable_path=self._local_thor_build,
                 quality=self._quality,
                 agentMode='arm',
@@ -474,15 +387,3 @@ class IThorMidLevelDepthEnvironment(IThorMidLevelEnvironment):
         return controller
 
 
-    # def reset_init_params(self, **kwargs):
-    #     self.controller.initialization_parameters.update({
-    #         "gridSize": self._grid_size,
-    #         "visibilityDistance": self._visibility_distance,
-    #         "fov": self._fov,
-    #         "makeAgentsVisible": self.make_agents_visible,
-    #         "alwaysReturnVisibleRange": self._always_return_visible_range,
-    #         'renderDepthImage':True,
-    #         **kwargs,
-    #     })
-
-#TODO this file requires serious cleaning

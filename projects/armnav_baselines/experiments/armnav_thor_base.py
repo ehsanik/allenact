@@ -4,6 +4,7 @@ from abc import ABC
 from math import ceil
 from typing import Dict, Any, List, Optional, Sequence
 
+import ai2thor
 import gym
 import numpy as np
 import torch
@@ -18,13 +19,11 @@ from projects.armnav_baselines.experiments.armnav_base import ArmNavBaseConfig
 from utils.experiment_utils import evenly_distribute_count_into_bins
 from utils.system import get_logger
 
-#TODO go over this file
 class ArmNavThorBaseConfig(ArmNavBaseConfig, ABC):
     """The base config for all iTHOR PointNav experiments."""
 
     TASK_SAMPLER = PickupDropOffGeneralSampler
     VISUALIZE = False #TODO work on this later
-    OBJECT_TYPES = [] #This can potentially be Null
 
     NUM_PROCESSES: Optional[int] = None
     TRAIN_GPU_IDS = list(range(torch.cuda.device_count()))
@@ -35,7 +34,13 @@ class ArmNavThorBaseConfig(ArmNavBaseConfig, ABC):
     TRAIN_DATASET_DIR: Optional[str] = None
     VAL_DATASET_DIR: Optional[str] = None
 
-    TARGET_TYPES: Optional[Sequence[str]] = None
+    CAP_TRAINING = None
+
+    TRAIN_SCENES: str = None
+    VAL_SCENES: str = None
+    TEST_SCENES: str = None
+
+    OBJECT_TYPES: Optional[Sequence[str]] = None
 
     def __init__(self):
         super().__init__()
@@ -43,15 +48,18 @@ class ArmNavThorBaseConfig(ArmNavBaseConfig, ABC):
         self.ENV_ARGS = dict(
             width=self.CAMERA_WIDTH,
             height=self.CAMERA_HEIGHT,
-            continuousMode=True,
-            applyActionNoise=self.STOCHASTIC,
-            agentType="stochastic",
-            rotateStepDegrees=self.ROTATION_DEGREES,
+            # continuousMode=True,
+            # applyActionNoise=self.STOCHASTIC,
+            # agentType="stochastic",
+            # rotateStepDegrees=self.ROTATION_DEGREES,
             visibilityDistance=self.VISIBILITY_DISTANCE,
             gridSize=self.STEP_SIZE,
             snapToGrid=False,
-            agentMode="bot",
+            agentMode='arm',
+            agentControllerType='mid-level',
+            useMassThreshold = True, massThreshold = 10,
             include_private_scenes=False,
+            server_class=ai2thor.fifo_server.FifoServer,
             # renderDepthImage=any(isinstance(s, DepthSensorThor) for s in self.SENSORS),
         )
 
@@ -123,126 +131,115 @@ class ArmNavThorBaseConfig(ArmNavBaseConfig, ABC):
         return np.round(np.linspace(0, n, num_parts + 1, endpoint=True)).astype(
             np.int32
         )
-
     def _get_sampler_args_for_scene_split(
-        self,
-        scenes_dir: str,
-        process_ind: int,
-        total_processes: int,
-        devices: Optional[List[int]],
-        seeds: Optional[List[int]],
-        deterministic_cudnn: bool,
-        include_expert_sensor: bool = True,
+            self,
+            scenes: List[str],
+            process_ind: int,
+            total_processes: int,
+            seeds: Optional[List[int]] = None,
+            deterministic_cudnn: bool = False,
     ) -> Dict[str, Any]:
-        path = os.path.join(scenes_dir, "*.json.gz")
-        scenes = [scene.split("/")[-1].split(".")[0] for scene in glob.glob(path)]
-        if len(scenes) == 0:
-            raise RuntimeError(
-                (
-                    "Could find no scene dataset information in directory {}."
-                    " Are you sure you've downloaded them? "
-                    " If not, see https://allenact.org/installation/download-datasets/ information"
-                    " on how this can be done."
-                ).format(scenes_dir)
-            )
-
-        oversample_warning = (
-            f"Warning: oversampling some of the scenes ({scenes}) to feed all processes ({total_processes})."
-            " You can avoid this by setting a number of workers divisible by the number of scenes"
-        )
         if total_processes > len(scenes):  # oversample some scenes -> bias
             if total_processes % len(scenes) != 0:
-                get_logger().warning(oversample_warning)
+                print(
+                    "Warning: oversampling some of the scenes to feed all processes."
+                    " You can avoid this by setting a number of workers divisible by the number of scenes"
+                )
             scenes = scenes * int(ceil(total_processes / len(scenes)))
             scenes = scenes[: total_processes * (len(scenes) // total_processes)]
-        elif len(scenes) % total_processes != 0:
-            get_logger().warning(oversample_warning)
-
+        else:
+            if len(scenes) % total_processes != 0:
+                print(
+                    "Warning: oversampling some of the scenes to feed all processes."
+                    " You can avoid this by setting a number of workers divisor of the number of scenes"
+                )
         inds = self._partition_inds(len(scenes), total_processes)
 
         return {
             "scenes": scenes[inds[process_ind] : inds[process_ind + 1]],
-            "object_types": self.TARGET_TYPES,
+            "env_args": self.ENV_ARGS,
             "max_steps": self.MAX_STEPS,
-            "sensors": [
-                s
-                for s in self.SENSORS
-                if (include_expert_sensor or not isinstance(s, ExpertActionSensor))
-            ],
+            "sensors": self.SENSORS,
             "action_space": gym.spaces.Discrete(
                 len(self.TASK_SAMPLER._TASK_TYPE.class_action_names())
             ),
             "seed": seeds[process_ind] if seeds is not None else None,
             "deterministic_cudnn": deterministic_cudnn,
-            "rewards_config": self.REWARD_CONFIG,
-            "env_args": {
-                **self.ENV_ARGS,
-                "x_display": (
-                    f"0.{devices[process_ind % len(devices)]}"
-                    if devices is not None
-                    and len(devices) > 0
-                    and devices[process_ind % len(devices)] >= 0
-                    else None
-                ),
-            },
         }
 
     def train_task_sampler_args(
-        self,
-        process_ind: int,
-        total_processes: int,
-        devices: Optional[List[int]] = None,
-        seeds: Optional[List[int]] = None,
-        deterministic_cudnn: bool = False,
+            self,
+            process_ind: int,
+            total_processes: int,
+            devices: Optional[List[int]] = None,
+            seeds: Optional[List[int]] = None,
+            deterministic_cudnn: bool = False,
     ) -> Dict[str, Any]:
         res = self._get_sampler_args_for_scene_split(
-            os.path.join(self.TRAIN_DATASET_DIR, "episodes"), #TODO we should add scenes here instead of this one
+            self.TRAIN_SCENES,
             process_ind,
             total_processes,
-            devices=devices,
             seeds=seeds,
             deterministic_cudnn=deterministic_cudnn,
         )
-        res["scene_directory"] = self.TRAIN_DATASET_DIR
-        res["loop_dataset"] = True
-        res["allow_flipping"] = True
+        res["scene_period"] = "manual"
+        res["sampler_mode"] = 'train'
+        res["cap_training"] = self.CAP_TRAINING
+        res["env_args"] = {}
+        res["env_args"].update(self.ENV_ARGS)
+        res["env_args"]["x_display"] = (
+            ("0.%d" % devices[process_ind % len(devices)]) if len(devices) > 0 else None
+        )
         return res
 
     def valid_task_sampler_args(
-        self,
-        process_ind: int,
-        total_processes: int,
-        devices: Optional[List[int]] = None,
-        seeds: Optional[List[int]] = None,
-        deterministic_cudnn: bool = False,
+            self,
+            process_ind: int,
+            total_processes: int,
+            devices: Optional[List[int]],
+            seeds: Optional[List[int]] = None,
+            deterministic_cudnn: bool = False,
     ) -> Dict[str, Any]:
         res = self._get_sampler_args_for_scene_split(
-            os.path.join(self.VAL_DATASET_DIR, "episodes"), #TODO we should add scenes here instead of this one
+            self.VALID_SCENES,
             process_ind,
             total_processes,
-            devices=devices,
             seeds=seeds,
             deterministic_cudnn=deterministic_cudnn,
-            include_expert_sensor=False,
         )
-        res["scene_directory"] = self.VAL_DATASET_DIR
-        res["loop_dataset"] = False
+        res["scene_period"] = self.VALID_SAMPLES_IN_SCENE
+        res["sampler_mode"] = 'val'
+        res["cap_training"] = self.CAP_TRAINING
+        res["max_tasks"] = self.VALID_SAMPLES_IN_SCENE * len(res["scenes"])
+        res["env_args"] = {}
+        res["env_args"].update(self.ENV_ARGS)
+        res["env_args"]["x_display"] = (
+            ("0.%d" % devices[process_ind % len(devices)]) if len(devices) > 0 else None
+        )
         return res
 
     def test_task_sampler_args(
-        self,
-        process_ind: int,
-        total_processes: int,
-        devices: Optional[List[int]] = None,
-        seeds: Optional[List[int]] = None,
-        deterministic_cudnn: bool = False,
+            self,
+            process_ind: int,
+            total_processes: int,
+            devices: Optional[List[int]],
+            seeds: Optional[List[int]] = None,
+            deterministic_cudnn: bool = False,
     ) -> Dict[str, Any]:
-        res =  self.valid_task_sampler_args( #TODO we should add scenes here instead of this one
-            process_ind=process_ind,
-            total_processes=total_processes,
-            devices=devices,
+        res = self._get_sampler_args_for_scene_split(
+            self.TEST_SCENES,
+            process_ind,
+            total_processes,
             seeds=seeds,
             deterministic_cudnn=deterministic_cudnn,
         )
+        res["scene_period"] = self.TEST_SAMPLES_IN_SCENE
         res["sampler_mode"] = 'test'
+        # res["max_tasks"] = self.TEST_SAMPLES_IN_SCENE * len(res["scenes"]) #LATER_TODO is this a proble?
+        res["env_args"] = {}
+        res["cap_training"] = self.CAP_TRAINING
+        res["env_args"].update(self.ENV_ARGS)
+        res["env_args"]["x_display"] = (
+            ("0.%d" % devices[process_ind % len(devices)]) if len(devices) > 0 else None
+        )
         return res

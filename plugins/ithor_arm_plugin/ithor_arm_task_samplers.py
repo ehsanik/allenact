@@ -78,12 +78,12 @@ class MidLevelArmTaskSampler(TaskSampler):
             self.visualizers.append(TestMetricLogger(exp_name=kwargs['exp_name'])) #TODO make sure this does not happen during training
 
 
-    def _create_environment(self) -> IThorMidLevelEnvironment:
+    def _create_environment(self, **kwargs) -> IThorMidLevelEnvironment:
         env = IThorMidLevelEnvironment(
             make_agents_visible=False,
             object_open_speed=0.05,
             # restrict_to_initially_reachable_points=True, # is this really important?
-            **self.env_args,
+            env_args=self.env_args, #TODO why can't i do the same thing as the other task sampler?
         )
 
         return env

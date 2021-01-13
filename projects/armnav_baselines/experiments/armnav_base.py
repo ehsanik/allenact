@@ -14,12 +14,12 @@ class ArmNavBaseConfig(ExperimentConfig, ABC):
     SENSORS: Optional[Sequence[Sensor]] = None
 
     STEP_SIZE = 0.25
-    ROTATION_DEGREES = 30.0
+    ROTATION_DEGREES = 45.0
     VISIBILITY_DISTANCE = 1.0
-    STOCHASTIC = True
+    STOCHASTIC = False
 
-    CAMERA_WIDTH = 400
-    CAMERA_HEIGHT = 300
+    CAMERA_WIDTH = 224
+    CAMERA_HEIGHT = 224
     SCREEN_SIZE = 224
     MAX_STEPS = 200
 

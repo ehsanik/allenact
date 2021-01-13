@@ -132,15 +132,6 @@ class MidArmTask(Task[IThorMidLevelEnvironment]):
 
         self.visualize(self._last_action_str)
 
-        #TODO why though?
-        if self._success:
-            result['metric/average/total_success'] = 1.
-        elif self.is_done():
-            result['metric/average/total_success'] = 0.0
-
-        if self._success and not self.is_done():
-            raise Exception('What the fuck') #TODO this should never happen right? otherwise we should bring all the things below
-        self.reached_terminal_state
         if self.is_done():
             result = {**result, **super(MidArmTask, self).metrics()}
             self.finish_visualizer(self._success)

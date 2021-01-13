@@ -10,9 +10,18 @@ from projects.armnav_baselines.experiments.armnav_thor_base import (
 class ArmNaviThorBaseConfig(ArmNavThorBaseConfig, ABC):
     """The base config for all iTHOR ObjectNav experiments."""
 
-    NUM_PROCESSES = 40
+    NUM_PROCESSES = 25
     #TODO add all the arguments here
-    #TODO add train, test, val scenes here
+    TOTAL_NUMBER_SCENES = 30
+
+    TRAIN_SCENES = ["FloorPlan{}_physics".format(str(i)) for i in range(1, TOTAL_NUMBER_SCENES + 1) if (i % 3 == 1 or i % 3 == 0) and i != 28] # last scenes are really bad
+    TEST_SCENES = ["FloorPlan{}_physics".format(str(i)) for i in range(1, TOTAL_NUMBER_SCENES + 1) if i % 3 == 2 and i % 6 == 2]
+    VALID_SCENES = ["FloorPlan{}_physics".format(str(i)) for i in range(1, TOTAL_NUMBER_SCENES + 1) if i % 3 == 2 and i % 6 == 5]
+
+    ALL_SCENES = TRAIN_SCENES + TEST_SCENES + VALID_SCENES
+
+    assert len(ALL_SCENES) == TOTAL_NUMBER_SCENES - 1 and len(set(ALL_SCENES)) == TOTAL_NUMBER_SCENES - 1
+
 
 
     OBJECT_TYPES = tuple(
@@ -22,3 +31,9 @@ class ArmNaviThorBaseConfig(ArmNavThorBaseConfig, ABC):
             ]
         )
     )
+
+    # #
+    # TRAIN_SCENES = TEST_SCENES = VALID_SCENES = ['FloorPlan1_physics']
+    # OBJECT_TYPES = tuple(
+    #     ['Apple']
+    # )
