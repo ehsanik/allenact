@@ -1,0 +1,488 @@
+"""A wrapper for engaging with the THOR environment."""
+
+import copy
+import functools
+import math
+import random
+import time
+import typing
+import warnings
+from typing import Tuple, Dict, List, Set, Union, Any, Optional, Mapping
+
+import ai2thor.server
+import networkx as nx
+import numpy as np
+from ai2thor.controller import Controller
+
+from plugins.ithor_plugin.ithor_environment import IThorEnvironment
+from plugins.ithor_plugin.ithor_util import round_to_factor
+from plugins.ithor_plugin.ithor_constants import VISIBILITY_DISTANCE, FOV
+from utils.debugger_util import ForkedPdb
+from plugins.ithor_arm_plugin.ithor_arm_constants import ADITIONAL_ARM_ARGS, ARM_MIN_HEIGHT, ARM_MAX_HEIGHT, MOVE_ARM_HEIGHT_CONSTANT, MOVE_ARM_CONSTANT, BUILD_NUMBER
+
+
+class IThorKianaEnvironment(IThorEnvironment):
+    """Wrapper for the ai2thor controller providing additional functionality
+    and bookkeeping.
+
+    See [here](https://ai2thor.allenai.org/documentation/installation) for comprehensive
+     documentation on AI2-THOR.
+
+    # Attributes
+
+    controller : The ai2thor controller.
+    """
+
+    def __init__(
+        self,
+        x_display: Optional[str] = None,
+        docker_enabled: bool = False,
+        local_thor_build: Optional[str] = None,
+        visibility_distance: float = VISIBILITY_DISTANCE,
+        fov: float = FOV,
+        player_screen_width: int = 300,
+        player_screen_height: int = 300,
+        quality: str = "Very Low",
+        restrict_to_initially_reachable_points: bool = False,
+        make_agents_visible: bool = True,
+        object_open_speed: float = 1.0,
+        simplify_physics: bool = False,
+        verbose: bool = False,
+    ) -> None:
+        """Initializer.
+
+        # Parameters
+
+        x_display : The x display into which to launch ai2thor (possibly necessarily if you are running on a server
+            without an attached display).
+        docker_enabled : Whether or not to run thor in a docker container (useful on a server without an attached
+            display so that you don't have to start an x display).
+        local_thor_build : The path to a local build of ai2thor. This is probably not necessary for your use case
+            and can be safely ignored.
+        visibility_distance : The distance (in meters) at which objects, in the viewport of the agent,
+            are considered visible by ai2thor and will have their "visible" flag be set to `True` in the metadata.
+        fov : The agent's camera's field of view.
+        player_screen_width : The width resolution (in pixels) of the images returned by ai2thor.
+        player_screen_height : The height resolution (in pixels) of the images returned by ai2thor.
+        quality : The quality at which to render. Possible quality settings can be found in
+            `ai2thor._quality_settings.QUALITY_SETTINGS`.
+        restrict_to_initially_reachable_points : Whether or not to restrict the agent to locations in ai2thor
+            that were found to be (initially) reachable by the agent (i.e. reachable by the agent after resetting
+            the scene). This can be useful if you want to ensure there are only a fixed set of locations where the
+            agent can go.
+        make_agents_visible : Whether or not the agent should be visible. Most noticable when there are multiple agents
+            or when quality settings are high so that the agent casts a shadow.
+        object_open_speed : How quickly objects should be opened. High speeds mean faster simulation but also mean
+            that opening objects have a lot of kinetic energy and can, possibly, knock other objects away.
+        simplify_physics : Whether or not to simplify physics when applicable. Currently this only simplies object
+            interactions when opening drawers (when simplified, objects within a drawer do not slide around on
+            their own when the drawer is opened or closed, instead they are effectively glued down).
+        """
+
+        self._start_player_screen_width = player_screen_width
+        self._start_player_screen_height = player_screen_height
+        self._local_thor_build = local_thor_build
+        self.x_display = x_display
+        self.controller: Optional[Controller] = None
+        self._started = False
+        self._quality = quality
+        self._verbose = verbose
+
+        self._initially_reachable_points: Optional[List[Dict]] = None
+        self._initially_reachable_points_set: Optional[Set[Tuple[float, float]]] = None
+        self._move_mag: Optional[float] = None
+        self._grid_size: Optional[float] = None
+        self._visibility_distance = visibility_distance
+        self._fov = fov
+        self.restrict_to_initially_reachable_points = (
+            restrict_to_initially_reachable_points
+        )
+        self.make_agents_visible = make_agents_visible
+        self.object_open_speed = object_open_speed
+        self._always_return_visible_range = False
+        self.simplify_physics = simplify_physics
+
+        self.start(None)
+        self.check_controller_version()
+
+        # noinspection PyTypeHints
+        self.controller.docker_enabled = docker_enabled  # type: ignore
+    def check_controller_version(self):
+        if BUILD_NUMBER is not None:
+            assert BUILD_NUMBER in self.controller._build.url, 'Build number is not right'
+
+
+    def create_controller(self):
+        return Controller(
+            x_display=self.x_display,
+            player_screen_width=self._start_player_screen_width,
+            player_screen_height=self._start_player_screen_height,
+            local_executable_path=self._local_thor_build,
+            quality=self._quality,
+        )
+
+    def start(
+        self, scene_name: Optional[str], move_mag: float = 0.25, **kwargs,
+    ) -> None:
+        """Starts the ai2thor controller if it was previously stopped.
+
+        After starting, `reset` will be called with the scene name and move magnitude.
+
+        # Parameters
+
+        scene_name : The scene to load.
+        move_mag : The amount of distance the agent moves in a single `MoveAhead` step.
+        kwargs : additional kwargs, passed to reset.
+        """
+        if self._started:
+            raise RuntimeError(
+                "Trying to start the environment but it is already started."
+            )
+
+
+        self.controller = self.create_controller()
+
+        if (
+            self._start_player_screen_height,
+            self._start_player_screen_width,
+        ) != self.current_frame.shape[:2]:
+            self.controller.step(
+                {
+                    "action": "ChangeResolution",
+                    "x": self._start_player_screen_width,
+                    "y": self._start_player_screen_height,
+                }
+            )
+
+        self._started = True
+        self.reset(scene_name=scene_name, move_mag=move_mag, **kwargs)
+    def reset_init_params(self, **kwargs):
+        self.controller.initialization_parameters.update({
+            "gridSize": self._grid_size,
+            "visibilityDistance": self._visibility_distance,
+            "fov": self._fov,
+            "makeAgentsVisible": self.make_agents_visible,
+            "alwaysReturnVisibleRange": self._always_return_visible_range,
+            **kwargs,
+        })
+    def reset(
+        self, scene_name: Optional[str], move_mag: float = 0.25, **kwargs,
+    ):
+        self._move_mag = move_mag
+        self._grid_size = self._move_mag
+
+        if scene_name is None:
+            scene_name = self.controller.last_event.metadata["sceneName"]
+
+        self.reset_init_params(**kwargs)
+        self.controller.reset(scene_name)
+
+        if self.object_open_speed != 1.0:
+            self.controller.step(
+                {"action": "ChangeOpenSpeed", "x": self.object_open_speed}
+            )
+
+        self._initially_reachable_points = None
+        self._initially_reachable_points_set = None
+        self.controller.step({"action": "GetReachablePositions"})
+        if not self.controller.last_event.metadata["lastActionSuccess"]:
+            warnings.warn(
+                "Error when getting reachable points: {}".format(
+                    self.controller.last_event.metadata["errorMessage"]
+                )
+            )
+        self._initially_reachable_points = self.last_action_return
+
+    def randomize_agent_location(
+        self, seed: int = None, partial_position: Optional[Dict[str, float]] = None
+    ) -> Dict: # TODO for first stage only if object is visible
+        """Teleports the agent to a random reachable location in the scene."""
+        if partial_position is None:
+            partial_position = {}
+        k = 0
+        state: Optional[Dict] = None
+
+        while k == 0 or (not self.last_action_success and k < 10):
+            state = self.random_reachable_state(seed=seed)
+            self.teleport_agent_to(**{**state, **partial_position})
+            k += 1
+
+        if not self.last_action_success:
+            warnings.warn(
+                (
+                    "Randomize agent location in scene {}"
+                    " with seed {} and partial position {} failed in "
+                    "10 attempts. Forcing the action."
+                ).format(self.scene_name, seed, partial_position)
+            )
+            self.teleport_agent_to(**{**state, **partial_position}, force_action=True)  # type: ignore
+            assert self.last_action_success
+
+        assert state is not None
+        return state
+
+    def object_in_hand(self):
+        """Object metadata for the object in the agent's hand."""
+        inv_objs = self.last_event.metadata["inventoryObjects"]
+        if len(inv_objs) == 0:
+            return None
+        elif len(inv_objs) == 1:
+            return self.get_object_by_id(
+                self.last_event.metadata["inventoryObjects"][0]["objectId"]
+            )
+        else:
+            raise AttributeError("Must be <= 1 inventory objects.")
+
+    def step(
+        self, action_dict: Dict[str, Union[str, int, float]]
+    ) -> ai2thor.server.Event:
+        """Take a step in the ai2thor environment."""
+        action = typing.cast(str, action_dict["action"])
+
+        skip_render = "renderImage" in action_dict and not action_dict["renderImage"]
+        last_frame: Optional[np.ndarray] = None
+        if skip_render:
+            last_frame = self.current_frame
+
+        if self.simplify_physics:
+            action_dict["simplifyOPhysics"] = True
+
+
+        action_dict['manualInteract'] = True
+
+
+
+        if 'Original' in action:
+            action.replace('Original', '')
+            action_dict['action'] = action
+
+        elif action in ['MoveAhead']:
+            action_dict['action'] = 'MoveAhead'
+            pass
+
+        elif action in ['RotateRight', 'RotateLeft']:
+            action_dict['degrees'] = 45
+
+        sr = self.controller.step(action_dict)
+
+        if self._verbose:
+            print('Step in env:', action, 'success', sr.metadata['lastActionSuccess'])
+
+        if self.restrict_to_initially_reachable_points:
+            self._snap_agent_to_initially_reachable()
+
+        if skip_render:
+            assert last_frame is not None
+            self.last_event.frame = last_frame
+
+        return sr
+
+class IThorMidLevelEnvironment(IThorKianaEnvironment):
+
+    def create_controller(self):
+        controller = Controller(
+            x_display=self.x_display,
+            player_screen_width=self._start_player_screen_width,
+            player_screen_height=self._start_player_screen_height,
+            local_executable_path=self._local_thor_build,
+            quality=self._quality,
+            agentMode='arm',
+            agentControllerType='mid-level',
+            useMassThreshold = True, massThreshold = 10,
+            server_class=ai2thor.fifo_server.FifoServer#, visibilityScheme='Distance',#For making way Faster
+        )
+        # event = controller.step(action='MakeAllObjectsMoveable')
+
+        return controller
+
+    def reset(
+            self, scene_name: Optional[str], move_mag: float = 0.25, **kwargs,
+    ):
+        super().reset(scene_name=scene_name, move_mag=move_mag, **kwargs)
+        event = self.controller.step(action='MakeAllObjectsMoveable')
+        # self.base_position = {'x':0, 'y': 0, 'z': 0, 'h': 0.4} # is this a good start? this will change based on current stuff
+
+
+    def finish_and_show_off(self):
+        event = self.controller.step(action='PickUpMidLevelHand')
+        if event.metadata['lastActionSuccess'] is False:
+            print('FAILED TO PICKUP FAILED TO PICKUP FAILED TO PICKUP')
+        base_position = self.get_current_arm_state()
+        self.controller.step(action='MoveMidLevelArmHeight', y=base_position['h'] + 0.1, speed = 1.0, returnToStart = False)# just to show it has been pick up
+
+
+    def get_current_arm_state(self):
+        h_min = ARM_MIN_HEIGHT
+        h_max = ARM_MAX_HEIGHT
+        agent_base_location = 0.9009995460510254
+        event = self.controller.last_event
+        offset = event.metadata['agent']['position']['y'] - agent_base_location
+        h_max += offset
+        h_min += offset
+        joints=(event.metadata['arm']['joints'])
+        arm=joints[-1]
+        assert arm['name'] == 'robot_arm_4_jnt'
+        xyz_dict = arm['rootRelativePosition']
+        height_arm = joints[0]['position']['y']
+        xyz_dict['h'] = (height_arm - h_min) / (h_max - h_min)
+        return xyz_dict
+
+    def get_absolute_hand_state(self):
+        event = self.controller.last_event
+        joints=(event.metadata['arm']['joints'])
+        arm=joints[-1]
+        assert arm['name'] == 'robot_arm_4_jnt'
+        xyz_dict = arm['position']
+        return dict(position=xyz_dict, rotation={'x':0, 'y':0, 'z':0})
+
+    def get_pickupable_objects(self):
+
+        # this decreases the fps by half
+        # event = self.controller.step(action='WhatObjectsCanHandPickUp')# remove this, it is just for the sake of being similar for now
+        # object_list = event.metadata['actionReturn']
+
+        event = self.controller.last_event
+        object_list = event.metadata['arm']['PickupableObjectsInsideHandSphere']
+
+        return object_list
+
+    def pickup_object(self, object_id):
+        event = self.controller.step(action='PickUpMidLevelHand')
+        success = event.metadata['lastActionSuccess']
+
+        # make sure the event succeeds, correct object in hand otherwise drop it and return false
+        if success:
+            object_inventory = self.controller.last_event.metadata['arm']['HeldObjects']
+            if object_id not in object_inventory:
+                print('PICKED UP WRONG OBJECT HAVE TO DROP')
+                event = self.controller.step(action='DropMidLevelHand')
+                return False
+            return True
+        else:
+            print('PICKUP FAILED')
+            return False
+
+
+
+    def step(
+            self, action_dict: Dict[str, Union[str, int, float]]
+    ) -> ai2thor.server.Event:
+        """Take a step in the ai2thor environment."""
+        action = typing.cast(str, action_dict["action"])
+
+        skip_render = "renderImage" in action_dict and not action_dict["renderImage"]
+        last_frame: Optional[np.ndarray] = None
+        if skip_render:
+            last_frame = self.current_frame
+
+        if self.simplify_physics:
+            action_dict["simplifyOPhysics"] = True
+
+
+
+        # action_dict['manualInteract'] = True # we should remove this right?
+
+        if action in ['PickUpMidLevel', 'DoneMidLevel']:
+            action_dict['action'] = 'Pass'
+
+        elif not 'MoveArm' in action:
+            if 'Continuous' in action:
+                copy_aditions = copy.copy(ADITIONAL_ARM_ARGS)
+                copy_aditions['speed'] = copy_aditions['moveSpeed']
+                action_dict = {**action_dict, **copy_aditions}
+                if action in ['MoveAheadContinuous']:
+                    action_dict['action'] = 'MoveContinuous'
+                    action_dict['direction'] = dict(x=0.0, y=0.0, z=.2)
+
+                elif action in ['RotateRightContinuous']:
+                    action_dict['action'] = 'RotateContinuous'
+                    action_dict['degrees'] = 45
+
+                elif action in ['RotateLeftContinuous']:
+                    action_dict['action'] = 'RotateContinuous'
+                    action_dict['degrees'] = -45
+
+
+        else:
+            base_position = self.get_current_arm_state()
+            # action_dict['speed'] = 2 if DISABLERENDER else 1
+            # action_dict['returnToStart'] = False
+            # action_dict['disableRendering'] = False
+            # if DISABLERENDER:
+                # action_dict['disableRendering'] = True
+            if 'MoveArmHeight' in action:
+                action_dict['action'] = 'MoveMidLevelArmHeight'
+
+                if action == 'MoveArmHeightP':
+                    base_position['h'] += MOVE_ARM_HEIGHT_CONSTANT
+                if action == 'MoveArmHeightM':
+                    base_position['h'] -= MOVE_ARM_HEIGHT_CONSTANT # height is pretty big!
+                action_dict['y'] = base_position['h']
+            else:
+                action_dict['handCameraSpace'] = False
+                action_dict['action'] = 'MoveMidLevelArm'
+                if action == 'MoveArmXP':
+                    base_position['x'] += MOVE_ARM_CONSTANT
+                elif action == 'MoveArmXM':
+                    base_position['x'] -= MOVE_ARM_CONSTANT
+                elif action == 'MoveArmYP':
+                    base_position['y'] += MOVE_ARM_CONSTANT
+                elif action == 'MoveArmYM':
+                    base_position['y'] -= MOVE_ARM_CONSTANT
+                elif action == 'MoveArmZP':
+                    base_position['z'] += MOVE_ARM_CONSTANT
+                elif action == 'MoveArmZM':
+                    base_position['z'] -= MOVE_ARM_CONSTANT
+                action_dict['position'] = {k:v for (k,v) in base_position.items() if k in ['x', 'y', 'z']}
+
+        if action_dict['action'] in ['MoveMidLevelArm', 'MoveMidLevelArmHeight', 'MoveContinuous', 'DropMidLevelHand', 'RotateContinuous']: #LATER_TODO pick up does not have it?
+            action_dict = {**action_dict, **ADITIONAL_ARM_ARGS}
+        #LATER_TODO should I manually set action success based on previous position? be careful to change last_event as well
+
+        sr = self.controller.step(action_dict)
+
+        if self._verbose:
+            # print('controller.step({})'.format(action_dict)) #
+            print('Step in env:', action, 'success', sr.metadata['lastActionSuccess'], sr.metadata['actionReturn'] if not sr.metadata['lastActionSuccess'] else '')
+
+        if self.restrict_to_initially_reachable_points:
+            self._snap_agent_to_initially_reachable()
+
+        if skip_render:
+            assert last_frame is not None
+            self.last_event.frame = last_frame
+
+        return sr
+
+class IThorMidLevelDepthEnvironment(IThorMidLevelEnvironment):
+    def create_controller(self):
+        controller = Controller(
+                x_display=self.x_display,
+                width=self._start_player_screen_width,
+                height=self._start_player_screen_height, #LATER_TODO change this everywhere
+                # player_screen_width=self._start_player_screen_width,
+                # player_screen_height=self._start_player_screen_height,
+                local_executable_path=self._local_thor_build,
+                quality=self._quality,
+                agentMode='arm',
+                agentControllerType='mid-level',
+                server_class=ai2thor.fifo_server.FifoServer,
+                useMassThreshold=True, massThreshold=10,
+                renderDepthImage=True,
+            )
+        # event = controller.step(action='MakeAllObjectsMoveable')
+        return controller
+
+
+    # def reset_init_params(self, **kwargs):
+    #     self.controller.initialization_parameters.update({
+    #         "gridSize": self._grid_size,
+    #         "visibilityDistance": self._visibility_distance,
+    #         "fov": self._fov,
+    #         "makeAgentsVisible": self.make_agents_visible,
+    #         "alwaysReturnVisibleRange": self._always_return_visible_range,
+    #         'renderDepthImage':True,
+    #         **kwargs,
+    #     })
+
+#TODO this file requires serious cleaning

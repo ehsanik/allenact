@@ -182,3 +182,5 @@ src
 # Files created when running training
 **/used_configs
 *.patch
+
+experiment_output/
