@@ -101,6 +101,7 @@ class MidArmTask(Task[IThorMidLevelEnvironment]):
             visualizer.log(self.env, "")
 
     def visualize(self, action_str):
+
         for vizualizer in self.visualizers:
             vizualizer.log(self.env, action_str)
 
@@ -184,6 +185,7 @@ class PickUpDropOffTask(MidArmTask):
         self.object_picked_up = False
         self.got_reward_for_pickup = False
         self.start_visualize()
+
 
 
     def metrics(self) -> Dict[str, Any]:

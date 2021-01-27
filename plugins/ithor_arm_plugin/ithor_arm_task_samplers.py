@@ -75,7 +75,7 @@ class MidLevelArmTaskSampler(TaskSampler):
 
 
         if self.sampler_mode == 'test':
-            self.visualizers.append(TestMetricLogger(exp_name=kwargs['exp_name'])) #TODO make sure this does not happen during training
+            self.visualizers.append(TestMetricLogger(exp_name=kwargs['exp_name']))
 
 
     def _create_environment(self, **kwargs) -> IThorMidLevelEnvironment:

@@ -152,6 +152,10 @@ def get_args():
     )
     parser.set_defaults(disable_tensorboard=False)
 
+    parser.add_argument( #TODO luca
+        "--mode", type=str, default='train', choices=['train', 'test'],
+    )
+
     parser.add_argument(
         "-a",
         "--disable_config_saving",
@@ -268,7 +272,9 @@ def main():
 
     cfg, srcs = load_config(args)
 
-    if args.test_date is None:
+    # if args.test_date is None:
+    #TODO Luca
+    if args.mode == 'train':
         OnPolicyRunner(
             config=cfg,
             output_dir=args.output_dir,
@@ -285,7 +291,14 @@ def main():
             restart_pipeline=args.restart_pipeline,
             max_sampler_processes_per_worker=args.max_sampler_processes_per_worker,
         )
-    else:
+    elif args.mode == 'test':
+
+        #TODO make sure we are loading the model correctly
+
+        #TODO luca
+        if args.test_date is None:
+            args.test_date = '2000-01-01_01-01-01'
+
         OnPolicyRunner(
             config=cfg,
             output_dir=args.output_dir,

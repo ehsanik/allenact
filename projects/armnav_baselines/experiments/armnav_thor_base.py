@@ -1,5 +1,6 @@
 import glob
 import os
+import platform
 from abc import ABC
 from math import ceil
 from typing import Dict, Any, List, Optional, Sequence
@@ -14,7 +15,7 @@ from core.base_abstractions.preprocessor import SensorPreprocessorGraph
 from core.base_abstractions.sensor import SensorSuite, ExpertActionSensor
 from core.base_abstractions.task import TaskSampler
 from plugins.ithor_arm_plugin.ithor_arm_task_samplers import PickupDropOffGeneralSampler
-from plugins.ithor_arm_plugin.ithor_arm_viz import ImageVisualizer
+from plugins.ithor_arm_plugin.ithor_arm_viz import ImageVisualizer, TestMetricLogger
 from projects.armnav_baselines.experiments.armnav_base import ArmNavBaseConfig
 from utils.experiment_utils import evenly_distribute_count_into_bins
 from utils.system import get_logger
@@ -23,7 +24,9 @@ class ArmNavThorBaseConfig(ArmNavBaseConfig, ABC):
     """The base config for all iTHOR PointNav experiments."""
 
     TASK_SAMPLER = PickupDropOffGeneralSampler
-    VISUALIZE = False #TODO work on this later
+    VISUALIZE = False
+    if platform.system() == 'Darwin':
+        VISUALIZE = True
 
     NUM_PROCESSES: Optional[int] = None
     TRAIN_GPU_IDS = list(range(torch.cuda.device_count()))
@@ -118,7 +121,7 @@ class ArmNavThorBaseConfig(ArmNavBaseConfig, ABC):
         exp_name = cls.__name__
         if cls.VISUALIZE:
             visualizers = [
-                ImageVisualizer(exp_name=exp_name)
+                ImageVisualizer(exp_name=exp_name),
             ]
 
             kwargs['visualizers'] = visualizers
@@ -207,6 +210,7 @@ class ArmNavThorBaseConfig(ArmNavBaseConfig, ABC):
             seeds=seeds,
             deterministic_cudnn=deterministic_cudnn,
         )
+        #TODO VALID_SAMPLES_IN_SCENE does not exist
         res["scene_period"] = self.VALID_SAMPLES_IN_SCENE
         res["sampler_mode"] = 'val'
         res["cap_training"] = self.CAP_TRAINING
@@ -233,6 +237,7 @@ class ArmNavThorBaseConfig(ArmNavBaseConfig, ABC):
             seeds=seeds,
             deterministic_cudnn=deterministic_cudnn,
         )
+        #TODO TEST_SAMPLES_IN_SCENE does not exist
         res["scene_period"] = self.TEST_SAMPLES_IN_SCENE
         res["sampler_mode"] = 'test'
         # res["max_tasks"] = self.TEST_SAMPLES_IN_SCENE * len(res["scenes"]) #LATER_TODO is this a proble?

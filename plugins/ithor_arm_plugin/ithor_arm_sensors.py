@@ -45,7 +45,8 @@ class AgentRelativeCurrentObjectStateThorSensor(Sensor):
         object_id = task.task_info['objectId']
         current_object_state = env.get_object_by_id(object_id)
         relative_current_obj = convert_world_to_agent_coordinate(current_object_state, env.controller.last_event.metadata['agent'])
-        return convert_state_to_tensor(dict(position=relative_current_obj['position'], rotation=relative_current_obj['rotation']))
+        result = convert_state_to_tensor(dict(position=relative_current_obj['position'], rotation=relative_current_obj['rotation']))
+        return result
 
 class AgentRelativeGoalObjectStateThorSensor(Sensor):
     def __init__(
@@ -66,7 +67,10 @@ class AgentRelativeGoalObjectStateThorSensor(Sensor):
     ) -> Any:
         goal_object_state = task.task_info['world_goal_obj_state']
         relative_goal_obj = convert_world_to_agent_coordinate(goal_object_state, env.controller.last_event.metadata['agent'])
-        return convert_state_to_tensor(dict(position=relative_goal_obj['position'], rotation=relative_goal_obj['rotation']))
+        result = convert_state_to_tensor(dict(position=relative_goal_obj['position'], rotation=relative_goal_obj['rotation']))
+        if torch.any(result != result): #TODO remove this
+            ForkedPdb().set_trace()
+        return result
 
 class RelativeObjectToGoalSensor(Sensor):
     def __init__(
@@ -95,8 +99,10 @@ class RelativeObjectToGoalSensor(Sensor):
         relative_current_obj = convert_world_to_agent_coordinate(object_info, agent_state)
         relative_goal_state = convert_world_to_agent_coordinate(target_state, agent_state)
         relative_distance = diff_position(relative_current_obj, relative_goal_state)
-
-        return convert_state_to_tensor(dict(position=relative_distance))
+        result = convert_state_to_tensor(dict(position=relative_distance))
+        if torch.any(result != result): #TODO remove this
+            ForkedPdb().set_trace()
+        return result
 
 class PickedUpObjSensor(Sensor):
     def __init__(
@@ -168,5 +174,10 @@ class RelativeAgentArmToObjectSensor(Sensor):#TODO double check this to see if i
         relative_goal_obj = convert_world_to_agent_coordinate(object_info, env.controller.last_event.metadata['agent'])
         relative_hand_state = convert_world_to_agent_coordinate(hand_state, env.controller.last_event.metadata['agent'])
         relative_distance = diff_position(relative_goal_obj, relative_hand_state)
-
-        return convert_state_to_tensor(dict(position=relative_distance))
+        result = convert_state_to_tensor(dict(position=relative_distance))
+        if torch.any(result != result): #TODO remove this
+            #TODO definitely remove this and this should only happen for this one not the other ones
+            mask = result != result
+            result[mask] = 0.
+            #TODO this is only a quick hack. we need to resolve the issues with the arm first
+        return result

@@ -15,6 +15,7 @@ from core.algorithms.onpolicy_sync.policy import (
 from core.base_abstractions.distributions import CategoricalDistr
 from core.base_abstractions.misc import ActorCriticOutput, Memory
 from core.models.basic_models import SimpleCNN, RNNStateEncoder
+from utils.debugger_util import ForkedPdb
 
 
 class PointNavActorCriticSimpleConvRNN(ActorCriticModel[CategoricalDistr]):

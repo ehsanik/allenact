@@ -21,6 +21,7 @@ from core.algorithms.onpolicy_sync.policy import (
 from core.base_abstractions.distributions import CategoricalDistr
 from core.base_abstractions.misc import ActorCriticOutput
 from core.models.basic_models import SimpleCNN, RNNStateEncoder
+from utils.debugger_util import ForkedPdb
 from utils.net_utils import input_embedding_net
 
 
@@ -146,11 +147,24 @@ class ArmNavBaselineActorCritic(ActorCriticModel[CategoricalDistr]):
 
         x_cat = torch.cat(x, dim=1)  # type: ignore
         x_out, rnn_hidden_states = self.state_encoder(x_cat, memory.tensor("rnn"), masks)
-        actor_out = self.actor(x_out)
-        critic_out = self.critic(x_out)
-        actor_critic_output = ActorCriticOutput(
-            distributions=actor_out, values=critic_out, extras={}
-        )
+
+
+        if torch.any(x_out != x_out): #TODO remove this
+            nan_values = torch.nonzero((x_out != x_out),as_tuple=True)
+            print(nan_values)
+            print('the values that are bad are ', x_out[nan_values])
+            ForkedPdb().set_trace()
+
+        try:
+            actor_out = self.actor(x_out)
+            critic_out = self.critic(x_out)
+            actor_critic_output = ActorCriticOutput(
+                distributions=actor_out, values=critic_out, extras={}
+            )
+        except Exception: #TODO remove
+            print(x_out)
+            print('Oh no we failed')
+            ForkedPdb().set_trace()
 
         updated_memory = memory.set_tensor('rnn', rnn_hidden_states)
 
