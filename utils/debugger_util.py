@@ -1,6 +1,8 @@
 import pdb
 import sys
 import matplotlib as mpl
+import torch
+
 mpl.use('Agg')
 import matplotlib.pyplot as plt
 
@@ -34,3 +36,13 @@ class ForkedPdb(pdb.Pdb):
             pdb.Pdb.interaction(self, *args, **kwargs)
         finally:
             sys.stdin = _stdin
+
+def is_weight_nan(model):
+    all_params = [k for k in model.parameters()]
+    # [p.shape for p in all_params]
+    has_nan = [torch.any(p != p) for p in all_params]
+    norms = [p.norm() for p in all_params]
+    print('norms', norms)
+    print('total nans', sum(has_nan), 'out of', len(has_nan))
+    print('total norm', sum(norms) / len(norms))
+

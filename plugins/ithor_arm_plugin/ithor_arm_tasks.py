@@ -39,9 +39,9 @@ def position_distance(s1, s2):
 
 
 
-class MidArmTask(Task[IThorMidLevelEnvironment]):
+class PickUpDropOffTask(Task[IThorMidLevelEnvironment]):
 
-    _actions = ()
+    _actions = (MOVE_ARM_HEIGHT_P, MOVE_ARM_HEIGHT_M, MOVE_ARM_X_P, MOVE_ARM_X_M, MOVE_ARM_Y_P, MOVE_ARM_Y_M, MOVE_ARM_Z_P, MOVE_ARM_Z_M)# put back, MOVE_AHEAD, ROTATE_RIGHT, ROTATE_LEFT)#LATER_TODO do the actual pickup later, PICKUP)
 
     def __init__(
             self,
@@ -66,6 +66,19 @@ class MidArmTask(Task[IThorMidLevelEnvironment]):
         ] = None
         self.visualizers = visualizers
         self.start_visualize()
+        self.action_sequence_and_success = []
+        self._took_end_action: bool = False
+        self._success: Optional[bool] = False
+        self._subsampled_locations_from_which_obj_visible: Optional[
+            List[Tuple[float, float, int, int]]
+        ] = None
+
+        #in allenact initialization is with 0.2
+        self.last_obj_to_goal_distance = None
+        self.last_arm_to_obj_distance = None
+        self.object_picked_up = False
+        self.got_reward_for_pickup = False
+        self.reward_configs = kwargs['reward_configs']
 
 
     @property
@@ -93,8 +106,9 @@ class MidArmTask(Task[IThorMidLevelEnvironment]):
     def start_visualize(self):
         for visualizer in self.visualizers:
             # assert visualizer.is_empty(), ForkedPdb().set_trace()
-            #TODO this is a quick hack, fix it later, why finish visualizer is not called?
+            #LATER_TODO this is a quick hack, fix it later, why finish visualizer is not called?
             if not visualizer.is_empty():
+                print('OH NO VISUALIZER WAS NOT EMPTY')
                 visualizer.finish_episode(self, self.task_info)
                 visualizer.finish_episode_metrics(self, self.task_info, None)
             # image = self.env.current_frame #Adding first frame
@@ -121,76 +135,35 @@ class MidArmTask(Task[IThorMidLevelEnvironment]):
 
 
 
-    def metrics(self) -> Dict[str, Any]:
-        result = {}
-        action_stat = {'metric/action_stat/' + action_str: 0 for action_str in self._actions}
-        result = {**action_stat, **result}
-        result['metric/action_stat/' + self._last_action_str] = 1
-        last_action_name = self._last_action_str
-        last_action_success = self.last_action_success
-        result['metric/' + 'action_success/{}'.format(last_action_name)] = int(last_action_success)
-        result['metric/' + 'action_success/total'] = int(last_action_success)
+    def calc_action_stat_metrics(self) -> Dict[str, Any]:
+        action_stat = {'metric/action_stat/' + action_str: 0. for action_str in self._actions}
+        action_success_stat = {'metric/action_success/' + action_str: 0. for action_str in self._actions}
+        action_success_stat['metric/action_success/total'] = 0.
 
-        self.visualize(self._last_action_str)
+        seq_len = len(self.action_sequence_and_success)
+        for (action_name, action_success) in self.action_sequence_and_success: #TODO is this too slow?
+            action_stat['metric/action_stat/' + action_name] += 1.
+            action_success_stat['metric/action_success/{}'.format(action_name)] += (action_success)
+            action_success_stat['metric/action_success/total'] += (action_success)
 
-        if self.is_done():
-            result = {**result, **super(MidArmTask, self).metrics()}
-            self.finish_visualizer(self._success)
-            if self._success:
-                result['metric/average/eplen_success'] = result['ep_length']
-            result['success'] = self._success
+        action_success_stat['metric/action_success/total'] /= seq_len
+
+        for action_name in self._actions:
+            action_success_stat['metric/' + 'action_success/{}'.format(action_name)] /= (action_stat['metric/action_stat/' + action_name] + 0.000001)
+            action_stat['metric/action_stat/' + action_name] /= seq_len
+
+        succ = [v for v in action_success_stat.values()]; sum(succ) / len(succ)
+        result = {**action_stat, **action_success_stat}
+
+
 
         return result
-
-
-    def _step(self, action: int) -> RLStepResult:
-
-        raise Exception('Not Implemented')
-
-
-    def judge(self) -> float:
-        raise Exception('Not Implemented')
-
-
-class PickUpDropOffTask(MidArmTask):
-
-    _actions = (MOVE_ARM_HEIGHT_P, MOVE_ARM_HEIGHT_M, MOVE_ARM_X_P, MOVE_ARM_X_M, MOVE_ARM_Y_P, MOVE_ARM_Y_M, MOVE_ARM_Z_P, MOVE_ARM_Z_M)# put back, MOVE_AHEAD, ROTATE_RIGHT, ROTATE_LEFT)#LATER_TODO do the actual pickup later, PICKUP)
-
-    def __init__(
-            self,
-            env: IThorMidLevelEnvironment,
-            sensors: List[Sensor],
-            task_info: Dict[str, Any],
-            max_steps: int,
-            visualizers: List[LoggerVisualizer] = [],
-            **kwargs
-    ) -> None:
-        """Initializer.
-
-        See class documentation for parameter definitions.
-        """
-        super().__init__(
-            env=env, sensors=sensors, task_info=task_info, max_steps=max_steps, **kwargs
-        )
-        self._took_end_action: bool = False
-        self._success: Optional[bool] = False
-        self._subsampled_locations_from_which_obj_visible: Optional[
-            List[Tuple[float, float, int, int]]
-        ] = None
-        self.visualizers = visualizers
-
-        #in allenact initialization is with 0.2
-        self.last_obj_to_goal_distance = None
-        self.last_arm_to_obj_distance = None
-        self.object_picked_up = False
-        self.got_reward_for_pickup = False
-        self.start_visualize()
-
 
 
     def metrics(self) -> Dict[str, Any]:
         result = super(PickUpDropOffTask, self).metrics()
         if self.is_done():
+            result = {**result, **self.calc_action_stat_metrics()}
             final_obj_distance_from_goal = self.obj_distance_from_goal()
             result['metric/average/final_obj_distance_from_goal'] = final_obj_distance_from_goal
             final_arm_distance_from_obj = self.arm_distance_from_obj()
@@ -207,8 +180,16 @@ class PickUpDropOffTask(MidArmTask):
                 result['metric/average/ratio_distance_left'] = ratio_distance_left
                 result['metric/average/eplen_pickup'] = self.eplen_pickup
 
+            if self._success:
+                result['metric/average/eplen_success'] = result['ep_length']
+            result['success'] = self._success
+
             self.finish_visualizer_metrics(result)
+            self.finish_visualizer(self._success)
+            self.action_sequence_and_success = []
+
         return result
+
 
 
     def _step(self, action: int) -> RLStepResult:
@@ -216,11 +197,13 @@ class PickUpDropOffTask(MidArmTask):
         action_str = self.class_action_names()[action]
 
         self._last_action_str = action_str
-
         self.env.step({"action": action_str})
-
-
         self.last_action_success = self.env.last_action_success
+
+        last_action_name = self._last_action_str
+        last_action_success = float(self.last_action_success)
+        self.action_sequence_and_success.append((last_action_name, last_action_success))
+        self.visualize(last_action_name)
 
         # just check whether the object is within the reach, if yes, pick up
         object_id = self.task_info['objectId']
@@ -283,20 +266,20 @@ class PickUpDropOffTask(MidArmTask):
 
     def judge(self) -> float:
         """Compute the reward after having taken a step."""
-        reward = -0.01
+        reward = self.reward_configs['step_penalty']
 
         if not self.last_action_success:
-            reward += -0.03
+            reward += self.reward_configs['failed_action_penalty']
 
         if self._took_end_action:
-            reward += 10.0 if self._success else 0
+            reward += self.reward_configs['goal_success_reward'] if self._success else self.reward_configs['failed_stop_reward']
 
         if self._last_action_str in [PICKUP, DONE]: #TODO this needs to be removed later, just a sanity check
             reward -= 5
 
         #increase reward if object pickup and only do it once
         if not self.got_reward_for_pickup and self.object_picked_up:
-            reward += 5
+            reward += self.reward_configs['pickup_success_reward']
             self.got_reward_for_pickup = True
 
         current_obj_to_arm_distance = self.arm_distance_from_obj()

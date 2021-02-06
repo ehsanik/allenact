@@ -3,10 +3,12 @@
 import copy
 import functools
 import math
+import os
 import random
 import time
 import typing
 import warnings
+from datetime import datetime
 from typing import Tuple, Dict, List, Set, Union, Any, Optional, Mapping
 
 import ai2thor.server
@@ -111,7 +113,7 @@ class IThorMidLevelEnvironment(IThorEnvironment):
         self.controller.docker_enabled = docker_enabled  # type: ignore
     def check_controller_version(self):
         if ARM_BUILD_NUMBER is not None:
-            assert ARM_BUILD_NUMBER in self.controller._build.url, 'Build number is not right'
+            assert ARM_BUILD_NUMBER in self.controller._build.url, 'Build number is not right, {} vs {}, use  pip3 install -e git+https://github.com/allenai/ai2thor.git@{}#egg=ai2thor'.format(self.controller._build.url, ARM_BUILD_NUMBER, ARM_BUILD_NUMBER)
 
 
     def create_controller(self):
@@ -193,34 +195,14 @@ class IThorMidLevelEnvironment(IThorEnvironment):
             )
         self._initially_reachable_points = self.last_action_return
         event = self.controller.step(action='MakeAllObjectsMoveable')
+        self.list_of_actions_so_far = []
 
     def randomize_agent_location(
         self, seed: int = None, partial_position: Optional[Dict[str, float]] = None
     ) -> Dict: # TODO for first stage only if object is visible
-        """Teleports the agent to a random reachable location in the scene."""
-        if partial_position is None:
-            partial_position = {}
-        k = 0
-        state: Optional[Dict] = None
 
-        while k == 0 or (not self.last_action_success and k < 10):
-            state = self.random_reachable_state(seed=seed)
-            self.teleport_agent_to(**{**state, **partial_position})
-            k += 1
+        raise Exception('not used')
 
-        if not self.last_action_success:
-            warnings.warn(
-                (
-                    "Randomize agent location in scene {}"
-                    " with seed {} and partial position {} failed in "
-                    "10 attempts. Forcing the action."
-                ).format(self.scene_name, seed, partial_position)
-            )
-            self.teleport_agent_to(**{**state, **partial_position}, force_action=True)  # type: ignore
-            assert self.last_action_success
-
-        assert state is not None
-        return state
 
     def object_in_hand(self):
         """Object metadata for the object in the agent's hand."""
@@ -233,6 +215,41 @@ class IThorMidLevelEnvironment(IThorEnvironment):
             )
         else:
             raise AttributeError("Must be <= 1 inventory objects.")
+
+    def correct_nan_inf(self, flawed_dict, extra_tag=''):
+        corrected_dict = copy.deepcopy(flawed_dict)
+        anything_changed = 0
+        for (k, v) in corrected_dict.items():
+            if v != v or math.isinf(v):
+                corrected_dict[k] = 0
+                anything_changed += 1
+        if anything_changed > 0:
+            #TODO this function is seriously bad
+            log_error_dir ='experiment_output/error_logs'
+            os.makedirs(log_error_dir, exist_ok=True)
+            current_time_file = datetime.now().strftime("%m_%d_%Y_%H_%M_%S_%f.txt")
+
+            with open(os.path.join(log_error_dir, current_time_file), 'w') as log_file:
+                def log_error(*args):
+                    print(args)
+                    for a in args:
+                        log_file.write(str(a) + ' ')
+                    log_file.write('\n')
+                log_error('who called?', extra_tag)
+                log_error('Scene is', self.controller.last_event.metadata['sceneName'])
+                log_error('Arm was nan, There were this many inf nan', anything_changed)
+                log_error('list of actions', self.list_of_actions_so_far)
+                log_error('flawed_one', flawed_dict)
+
+        return corrected_dict
+
+
+    def get_object_by_id(self, object_id: str) -> Optional[Dict[str, Any]]:
+        for o in self.last_event.metadata["objects"]:
+            if o["objectId"] == object_id:
+                o['position'] = self.correct_nan_inf(o['position'], 'obj id')
+                return o
+        return None
 
     def get_current_arm_state(self):
         h_min = ARM_MIN_HEIGHT
@@ -248,14 +265,16 @@ class IThorMidLevelEnvironment(IThorEnvironment):
         xyz_dict = arm['rootRelativePosition']
         height_arm = joints[0]['position']['y']
         xyz_dict['h'] = (height_arm - h_min) / (h_max - h_min)
+        xyz_dict = self.correct_nan_inf(xyz_dict, 'realtive hand')
         return xyz_dict
 
     def get_absolute_hand_state(self):
         event = self.controller.last_event
-        joints=(event.metadata['arm']['joints'])
-        arm=joints[-1]
+        joints = (event.metadata['arm']['joints'])
+        arm=copy.deepcopy(joints[-1])
         assert arm['name'] == 'robot_arm_4_jnt'
         xyz_dict = arm['position']
+        xyz_dict = self.correct_nan_inf(xyz_dict, 'absolute hand')
         return dict(position=xyz_dict, rotation={'x':0, 'y':0, 'z':0})
 
     def get_pickupable_objects(self):
@@ -266,7 +285,7 @@ class IThorMidLevelEnvironment(IThorEnvironment):
         return object_list
 
     def pickup_object(self, object_id):
-        event = self.controller.step(action='PickUpMidLevelHand')
+        event = self.step(dict(action='PickUpMidLevelHand'))
         success = event.metadata['lastActionSuccess']
 
         # make sure the event succeeds, correct object in hand otherwise drop it and return false
@@ -274,7 +293,7 @@ class IThorMidLevelEnvironment(IThorEnvironment):
             object_inventory = self.controller.last_event.metadata['arm']['HeldObjects']
             if object_id not in object_inventory:
                 print('PICKED UP WRONG OBJECT HAVE TO DROP')
-                event = self.controller.step(action='DropMidLevelHand')
+                event = self.step(dict(action='DropMidLevelHand'))
                 return False
             return True
         else:
@@ -295,8 +314,6 @@ class IThorMidLevelEnvironment(IThorEnvironment):
 
         if self.simplify_physics:
             action_dict["simplifyOPhysics"] = True
-
-
 
         # action_dict['manualInteract'] = True # we should remove this right?
 
@@ -321,7 +338,7 @@ class IThorMidLevelEnvironment(IThorEnvironment):
                     action_dict['degrees'] = -45
 
 
-        else:
+        elif 'MoveArm' in action:
             base_position = self.get_current_arm_state()
             if 'MoveArmHeight' in action:
                 action_dict['action'] = 'MoveMidLevelArmHeight'
@@ -353,6 +370,7 @@ class IThorMidLevelEnvironment(IThorEnvironment):
         #LATER_TODO should I manually set action success based on previous position? be careful to change last_event as well
 
         sr = self.controller.step(action_dict)
+        self.list_of_actions_so_far.append(action_dict)
 
         if self._verbose:
             # print('controller.step({})'.format(action_dict)) #

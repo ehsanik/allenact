@@ -864,15 +864,11 @@ class SingleProcessVectorSampledTasks(object):
                         data = data[0]
                     step_result: RLStepResult = current_task.step(data)
 
-                    #TODO talk to Luca about moving this up
-                    metrics = current_task.metrics()
-                    if metrics is not None and len(metrics) != 0:
-                        step_result.info[COMPLETE_TASK_METRICS_KEY] = metrics
 
                     if current_task.is_done():
-                        # metrics = current_task.metrics()
-                        # if metrics is not None and len(metrics) != 0:
-                        #     step_result.info[COMPLETE_TASK_METRICS_KEY] = metrics
+                        metrics = current_task.metrics()
+                        if metrics is not None and len(metrics) != 0:
+                            step_result.info[COMPLETE_TASK_METRICS_KEY] = metrics
 
                         if auto_resample_when_done:
                             current_task = task_sampler.next_task()

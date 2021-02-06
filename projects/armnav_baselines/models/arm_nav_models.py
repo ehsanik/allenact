@@ -21,7 +21,7 @@ from core.algorithms.onpolicy_sync.policy import (
 from core.base_abstractions.distributions import CategoricalDistr
 from core.base_abstractions.misc import ActorCriticOutput
 from core.models.basic_models import SimpleCNN, RNNStateEncoder
-from utils.debugger_util import ForkedPdb
+from utils.debugger_util import ForkedPdb, is_weight_nan
 from utils.net_utils import input_embedding_net
 
 
@@ -138,23 +138,27 @@ class ArmNavBaselineActorCritic(ActorCriticModel[CategoricalDistr]):
         Tuple of the `ActorCriticOutput` and recurrent hidden state.
         """
 
+        # ForkedPdb().set_trace()
         arm2obj_dist = self.get_relative_distance_embedding(observations['relative_agent_arm_to_obj'])
         obj2goal_dist = self.get_relative_distance_embedding(observations['relative_obj_to_goal'])
         #LATER_TODO maybe relative arm to agent location would help too?
 
         perception_embed = self.visual_encoder(observations)
+        # if perception_embed.shape[0] > 20:
+        #     is_weight_nan(self)# remove
         x = [arm2obj_dist, obj2goal_dist, perception_embed]
 
         x_cat = torch.cat(x, dim=1)  # type: ignore
         x_out, rnn_hidden_states = self.state_encoder(x_cat, memory.tensor("rnn"), masks)
 
+        def is_bad(tensor_x):
+            return torch.any(tensor_x != tensor_x) or torch.any(torch.isinf(tensor_x))
 
-        if torch.any(x_out != x_out): #TODO remove this
-            nan_values = torch.nonzero((x_out != x_out),as_tuple=True)
-            print(nan_values)
-            print('the values that are bad are ', x_out[nan_values])
+        if is_bad(x_out) or is_bad(rnn_hidden_states) or is_bad(arm2obj_dist) or is_bad(obj2goal_dist) or is_bad(perception_embed) or is_bad(x_cat): #TODO remove this
+            print('SOMETHING IS NOT RIGHT')
+            print('is_bad(x_out) or is_bad(rnn_hidden_states) or is_bad(arm2obj_dist) or is_bad(obj2goal_dist) or is_bad(perception_embed) or is_bad(x_cat)')
+            print(is_bad(x_out), is_bad(rnn_hidden_states), is_bad(arm2obj_dist), is_bad(obj2goal_dist), is_bad(perception_embed), is_bad(x_cat))
             ForkedPdb().set_trace()
-
         try:
             actor_out = self.actor(x_out)
             critic_out = self.critic(x_out)
@@ -162,7 +166,6 @@ class ArmNavBaselineActorCritic(ActorCriticModel[CategoricalDistr]):
                 distributions=actor_out, values=critic_out, extras={}
             )
         except Exception: #TODO remove
-            print(x_out)
             print('Oh no we failed')
             ForkedPdb().set_trace()
 

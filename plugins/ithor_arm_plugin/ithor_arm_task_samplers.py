@@ -3,6 +3,7 @@ import json
 import random
 from typing import List, Dict, Optional, Any, Union
 
+
 import cv2
 import gym
 
@@ -31,6 +32,7 @@ class MidLevelArmTaskSampler(TaskSampler):
             max_steps: int,
             env_args: Dict[str, Any],
             action_space: gym.Space,
+            rewards_config: Dict,
             objects: List[str],
             scene_period: Optional[Union[int, str]] = None,
             max_tasks: Optional[int] = None,
@@ -41,7 +43,7 @@ class MidLevelArmTaskSampler(TaskSampler):
             *args,
             **kwargs
     ) -> None:
-
+        self.rewards_config = rewards_config
         self.env_args = env_args
         self.scenes = scenes
         self.grid_size = 0.25
@@ -250,7 +252,9 @@ class PickupDropOffGeneralSampler(MidLevelArmTaskSampler):
             'target_location': target_location,
         }
 
-        event = self.env.controller.step(action = 'PlaceObjectAtPoint', objectId=source_location['object_id'], position=source_location['object_location'])
+        this_controller = self.env
+
+        event = this_controller.step(dict(action = 'PlaceObjectAtPoint', objectId=source_location['object_id'], position=source_location['object_location']))
         if event.metadata['lastActionSuccess'] == False:
             print('oh no could not transport')
         agent_state = source_location['agent_pose']
@@ -258,17 +262,17 @@ class PickupDropOffGeneralSampler(MidLevelArmTaskSampler):
 
         # for start arm from high up as a cheating, this block is very important. never remove
         initial_pose = scene_start_cheating_init_pose[scene]
-        event1 = self.env.controller.step(action='TeleportFull', x=initial_pose['x'], y=initial_pose['y'], z=initial_pose['z'], rotation=dict(x=0, y=initial_pose['rotation'], z=0), horizon=initial_pose['horizon'])
-        self.env.controller.step('PausePhysicsAutoSim')
-        event2 = self.env.controller.step(action='MoveMidLevelArm',  position=dict(x=0.0, y=0, z=0.35), **ADITIONAL_ARM_ARGS)
-        event3 = self.env.controller.step(action='MoveMidLevelArmHeight', y=0.8, **ADITIONAL_ARM_ARGS)
+        event1 = this_controller.step(dict(action='TeleportFull', x=initial_pose['x'], y=initial_pose['y'], z=initial_pose['z'], rotation=dict(x=0, y=initial_pose['rotation'], z=0), horizon=initial_pose['horizon']))
+        this_controller.step(dict(action='PausePhysicsAutoSim'))
+        event2 = this_controller.step(dict(action='MoveMidLevelArm',  position=dict(x=0.0, y=0, z=0.35), **ADITIONAL_ARM_ARGS))
+        event3 = this_controller.step(dict(action='MoveMidLevelArmHeight', y=0.8, **ADITIONAL_ARM_ARGS))
         if not(event1.metadata['lastActionSuccess'] and event2.metadata['lastActionSuccess'] and event3.metadata['lastActionSuccess']):
             print('ARM MOVEMENT FAILED> SHOUD NEVER HAPPEN')
             # print('scene', scene, initial_pose, ADITIONAL_ARM_ARGS)
             # print(event1.metadata['actionReturn'] , event2.metadata['actionReturn'] , event3.metadata['actionReturn'])
 
 
-        event = self.env.controller.step(action='TeleportFull', x=agent_state['position']['x'], y=agent_state['position']['y'], z=agent_state['position']['z'], rotation=dict(x=agent_state['rotation']['x'], y=agent_state['rotation']['y'], z=agent_state['rotation']['z']), horizon=agent_state['cameraHorizon'])
+        event = this_controller.step(dict(action='TeleportFull', x=agent_state['position']['x'], y=agent_state['position']['y'], z=agent_state['position']['z'], rotation=dict(x=agent_state['rotation']['x'], y=agent_state['rotation']['y'], z=agent_state['rotation']['z']), horizon=agent_state['cameraHorizon']))
         if event.metadata['lastActionSuccess'] == False:
             print('oh no could not teleport')
 
@@ -284,6 +288,7 @@ class PickupDropOffGeneralSampler(MidLevelArmTaskSampler):
             max_steps=self.max_steps,
             action_space=self._action_space,
             visualizers=self.visualizers,
+            reward_configs=self.rewards_config,
         )
         return self._last_sampled_task
 
@@ -361,7 +366,7 @@ class DepthPickDropGeneralSampler(PickupDropOffGeneralSampler):
 
         return env
 
-class PickupDropOffGeneralSamplerDeterministic(PickupDropOffGeneralSampler): #TODO all the few shots should be with this one
+class PickupDropOffGeneralSamplerDeterministic(PickupDropOffGeneralSampler): #LATER_TODO all the few shots should be with this one
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)

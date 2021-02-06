@@ -644,6 +644,7 @@ class OnPolicyTrainer(OnPolicyRLEngine):
             ).state_dict()
 
         torch.save(save_dict, model_path)
+        print('Saved model in ', model_path)
         return model_path
 
     def checkpoint_load(

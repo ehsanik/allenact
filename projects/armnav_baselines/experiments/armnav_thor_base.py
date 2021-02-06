@@ -17,6 +17,7 @@ from core.base_abstractions.task import TaskSampler
 from plugins.ithor_arm_plugin.ithor_arm_task_samplers import PickupDropOffGeneralSampler
 from plugins.ithor_arm_plugin.ithor_arm_viz import ImageVisualizer, TestMetricLogger
 from projects.armnav_baselines.experiments.armnav_base import ArmNavBaseConfig
+from utils.debugger_util import ForkedPdb
 from utils.experiment_utils import evenly_distribute_count_into_bins
 from utils.system import get_logger
 
@@ -44,6 +45,12 @@ class ArmNavThorBaseConfig(ArmNavBaseConfig, ABC):
     TEST_SCENES: str = None
 
     OBJECT_TYPES: Optional[Sequence[str]] = None
+
+    #TODO fix this maybe
+    VALID_SAMPLES_IN_SCENE = 1
+    TEST_SAMPLES_IN_SCENE = 1
+
+
 
     def __init__(self):
         super().__init__()
@@ -168,6 +175,7 @@ class ArmNavThorBaseConfig(ArmNavBaseConfig, ABC):
             ),
             "seed": seeds[process_ind] if seeds is not None else None,
             "deterministic_cudnn": deterministic_cudnn,
+            "rewards_config": self.REWARD_CONFIG,
         }
 
     def train_task_sampler_args(
@@ -210,7 +218,6 @@ class ArmNavThorBaseConfig(ArmNavBaseConfig, ABC):
             seeds=seeds,
             deterministic_cudnn=deterministic_cudnn,
         )
-        #TODO VALID_SAMPLES_IN_SCENE does not exist
         res["scene_period"] = self.VALID_SAMPLES_IN_SCENE
         res["sampler_mode"] = 'val'
         res["cap_training"] = self.CAP_TRAINING
@@ -237,7 +244,6 @@ class ArmNavThorBaseConfig(ArmNavBaseConfig, ABC):
             seeds=seeds,
             deterministic_cudnn=deterministic_cudnn,
         )
-        #TODO TEST_SAMPLES_IN_SCENE does not exist
         res["scene_period"] = self.TEST_SAMPLES_IN_SCENE
         res["sampler_mode"] = 'test'
         # res["max_tasks"] = self.TEST_SAMPLES_IN_SCENE * len(res["scenes"]) #LATER_TODO is this a proble?

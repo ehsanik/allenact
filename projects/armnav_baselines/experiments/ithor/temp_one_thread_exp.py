@@ -31,6 +31,7 @@ class ArmNaviThorRGBPPOExperimentConfig(
         PickedUpObjSensor(),
     ]
 
+    NUM_PROCESSES = 1
 
 
     @classmethod
