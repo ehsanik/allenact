@@ -109,7 +109,7 @@ class PickUpDropOffTask(Task[IThorMidLevelEnvironment]):
             #LATER_TODO this is a quick hack, fix it later, why finish visualizer is not called?
             if not visualizer.is_empty():
                 print('OH NO VISUALIZER WAS NOT EMPTY')
-                visualizer.finish_episode(self, self.task_info)
+                visualizer.finish_episode(self.env, self, self.task_info)
                 visualizer.finish_episode_metrics(self, self.task_info, None)
             # image = self.env.current_frame #Adding first frame
             visualizer.log(self.env, "")
@@ -122,7 +122,7 @@ class PickUpDropOffTask(Task[IThorMidLevelEnvironment]):
     def finish_visualizer(self, episode_success):
 
         for visualizer in self.visualizers:
-            visualizer.finish_episode(self, self.task_info)
+            visualizer.finish_episode(self.env, self, self.task_info)
 
     def finish_visualizer_metrics(self, metric_results):
 

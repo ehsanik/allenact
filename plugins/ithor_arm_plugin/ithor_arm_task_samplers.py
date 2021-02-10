@@ -17,7 +17,7 @@ from utils.debugger_util import ForkedPdb
 from utils.experiment_utils import set_deterministic_cudnn, set_seed
 from plugins.ithor_arm_plugin.ithor_arm_constants import scene_start_cheating_init_pose, ADITIONAL_ARM_ARGS
 from utils.system import get_logger
-from plugins.ithor_arm_plugin.ithor_arm_viz import LoggerVisualizer, TestMetricLogger
+from plugins.ithor_arm_plugin.ithor_arm_viz import LoggerVisualizer, TestMetricLogger, ImageVisualizer
 
 
 class MidLevelArmTaskSampler(TaskSampler):
@@ -179,8 +179,8 @@ class PickupDropOffGeneralSampler(MidLevelArmTaskSampler):
 
 
         if self.cap_training is not None:
+            print('We are doing cap training!!!')
             # To be consistent across runs
-            import random
             random.seed(0)
             for countertop_obj in self.countertop_object_to_data_id.keys():
                 all_sequence = self.countertop_object_to_data_id[countertop_obj]
@@ -280,6 +280,12 @@ class PickupDropOffGeneralSampler(MidLevelArmTaskSampler):
         if self.env._verbose:
             print('task: ', task_info['objectId'], task_info['countertop_id'], 'source_location', task_info['source_location'], 'target_location', task_info['target_location'], )
             print('counter_top_source', source_data_point['countertop_id'], 'counter_top_target', target_data_point['countertop_id'])
+
+        should_visualize_goal_start = [x for x in self.visualizers if issubclass(type(x), ImageVisualizer)]
+        if len(should_visualize_goal_start) > 0:
+            task_info['visualization_source'] = source_data_point
+            task_info['visualization_target'] = target_data_point
+
 
         self._last_sampled_task = self._TASK_TYPE(
             env=self.env,

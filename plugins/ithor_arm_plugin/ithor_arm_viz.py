@@ -4,6 +4,8 @@ import numpy as np
 
 import imageio
 
+from plugins.ithor_arm_plugin.ithor_arm_constants import scene_start_cheating_init_pose
+from plugins.ithor_arm_plugin.ithor_arm_constants import ADITIONAL_ARM_ARGS
 from utils.debugger_util import ForkedPdb
 import cv2
 
@@ -30,6 +32,9 @@ class LoggerVisualizer:
         return len(self.log_queue) == 0
 
     def finish_episode_metrics(self, episode_info, task_info, metric_results):
+        pass
+
+    def finish_episode(self, environment, episode_info, task_info):
         pass
 
 
@@ -72,9 +77,9 @@ class TestMetricLogger(LoggerVisualizer):
 
         self.log_queue = []
         self.action_queue = []
-    #TODO what if sometimes it does not finish
-    def finish_episode(self, episode_info, task_info):
-        pass
+    # #TODO what if sometimes it does not finish
+    # def finish_episode(self, episode_info, task_info):
+    #     pass
         # now = datetime.now()
         #
         #
@@ -99,12 +104,13 @@ class TestMetricLogger(LoggerVisualizer):
 
 class ImageVisualizer(LoggerVisualizer):
 
-    def finish_episode(self, episode_info, task_info):
+    def finish_episode(self, environment, episode_info, task_info):
         now = datetime.now()
         time_to_write = now.strftime("%m_%d_%Y_%H_%M_%S")
         time_to_write += 'log_ind_{}'.format(self.logger_index)
         self.logger_index += 1
         print('Loggigng', time_to_write, 'len', len(self.log_queue))
+        object_id = task_info['objectId']
 
         pickup_success = episode_info.object_picked_up
         episode_success = episode_info._success
@@ -115,11 +121,12 @@ class ImageVisualizer(LoggerVisualizer):
 
         episode_success_offset = 'succ' if episode_success else 'fail'
         pickup_success_offset = 'succ' if pickup_success else 'fail'
-        gif_name = (time_to_write + '_pickup_' + pickup_success_offset + '_episode_' + episode_success_offset + '.gif')
+        gif_name = (time_to_write + '_obj_' + object_id.split('|')[0] + '_pickup_' + pickup_success_offset + '_episode_' + episode_success_offset + '.gif')
         concat_all_images = np.expand_dims(np.stack(self.log_queue, axis=0),axis=1)
         save_image_list_to_gif(concat_all_images, gif_name, self.log_dir)
 
-
+        self.log_start_goal(environment, task_info['visualization_source'], tag='start', img_adr = os.path.join(self.log_dir, time_to_write ))
+        self.log_start_goal(environment, task_info['visualization_target'], tag='goal', img_adr = os.path.join(self.log_dir, time_to_write ))
 
         self.log_queue = []
         self.action_queue = []
@@ -129,6 +136,41 @@ class ImageVisualizer(LoggerVisualizer):
         self.action_queue.append(action_str)
         self.log_queue.append(image_tensor)
 
+    def log_start_goal(self, env, task_info, tag, img_adr):
+        #TODO are we sure everything is done by this point metrics
+
+        object_location = task_info['object_location']
+        object_id = task_info['object_id']
+        agent_state = task_info['agent_pose']
+        this_controller = env.controller
+        scene = this_controller.last_event.metadata['sceneName'] #TODO maybe we need to reset env actually
+        event = this_controller.step(dict(action = 'DropMidLevelHand'))
+        event = this_controller.step(dict(action = 'PlaceObjectAtPoint', objectId=object_id, position=object_location))
+        if event.metadata['lastActionSuccess'] == False:
+            print('oh no could not transport')
+
+        # for start arm from high up as a cheating, this block is very important. never remove
+        initial_pose = scene_start_cheating_init_pose[scene]
+        event1 = this_controller.step(dict(action='TeleportFull', x=initial_pose['x'], y=initial_pose['y'], z=initial_pose['z'], rotation=dict(x=0, y=initial_pose['rotation'], z=0), horizon=initial_pose['horizon']))
+        this_controller.step(dict(action='PausePhysicsAutoSim'))
+        event2 = this_controller.step(dict(action='MoveMidLevelArm',  position=dict(x=0.0, y=0, z=0.35), **ADITIONAL_ARM_ARGS))
+        event3 = this_controller.step(dict(action='MoveMidLevelArmHeight', y=0.8, **ADITIONAL_ARM_ARGS))
+        if not(event1.metadata['lastActionSuccess'] and event2.metadata['lastActionSuccess'] and event3.metadata['lastActionSuccess']):
+            print('ARM MOVEMENT FAILED> SHOUD NEVER HAPPEN')
+            # print('scene', scene, initial_pose, ADITIONAL_ARM_ARGS)
+            # print(event1.metadata['actionReturn'] , event2.metadata['actionReturn'] , event3.metadata['actionReturn'])
+
+
+        event = this_controller.step(dict(action='TeleportFull', x=agent_state['position']['x'], y=agent_state['position']['y'], z=agent_state['position']['z'], rotation=dict(x=agent_state['rotation']['x'], y=agent_state['rotation']['y'], z=agent_state['rotation']['z']), horizon=agent_state['cameraHorizon']))
+        if event.metadata['lastActionSuccess'] == False:
+            print('oh no could not teleport')
+
+        image_tensor = this_controller.last_event.frame
+        image_dir = img_adr + '_obj_' + object_id.split('|')[0] + '_pickup_' + tag + '.png'
+        cv2.imwrite(image_dir, image_tensor[:,:,[2,1,0]])
+
+
+
 class ThirdViewVisualizer(LoggerVisualizer):
 
     def __init__(self):
@@ -136,7 +178,7 @@ class ThirdViewVisualizer(LoggerVisualizer):
         # self.init_camera = False
 
 
-    def finish_episode(self, episode_success, task_info):
+    def finish_episode(self, environment, episode_success, task_info):
         now = datetime.now()
         time_to_write = now.strftime("%m_%d_%Y_%H_%M_%S")
         print('Loggigng', time_to_write, 'len', len(self.log_queue))
