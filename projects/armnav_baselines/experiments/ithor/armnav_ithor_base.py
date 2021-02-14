@@ -10,7 +10,7 @@ from projects.armnav_baselines.experiments.armnav_thor_base import (
 class ArmNaviThorBaseConfig(ArmNavThorBaseConfig, ABC):
     """The base config for all iTHOR ObjectNav experiments."""
 
-    NUM_PROCESSES = 25
+    NUM_PROCESSES = 40
     #TODO add all the arguments here
     TOTAL_NUMBER_SCENES = 30
 

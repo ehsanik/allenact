@@ -194,7 +194,8 @@ class IThorMidLevelEnvironment(IThorEnvironment):
                 )
             )
         self._initially_reachable_points = self.last_action_return
-        event = self.controller.step(action='MakeAllObjectsMoveable')
+        self.controller.step(action='MakeAllObjectsMoveable')
+        self.controller.step(dict(action='PausePhysicsAutoSim'))
         self.list_of_actions_so_far = []
 
     def randomize_agent_location(
@@ -387,20 +388,11 @@ class IThorMidLevelEnvironment(IThorEnvironment):
 
 class IThorMidLevelDepthEnvironment(IThorMidLevelEnvironment):
     def create_controller(self):
-        controller = Controller(
-                x_display=self.x_display,
-                width=self._start_player_screen_width,
-                height=self._start_player_screen_height, #LATER_TODO change this everywhere
-                # width=self._start_player_screen_width,
-                # height=self._start_player_screen_height,
-                local_executable_path=self._local_thor_build,
-                quality=self._quality,
-                agentMode='arm',
-                agentControllerType='mid-level',
-                server_class=ai2thor.fifo_server.FifoServer,
-                useMassThreshold=True, massThreshold=10,
-                renderDepthImage=True,
-            )
+        raise Exception('Error')
+        # controller = Controller(
+        #         get the rest from the base
+        #         renderDepthImage=True,
+        #     )
         # event = controller.step(action='MakeAllObjectsMoveable')
         return controller
 

@@ -41,7 +41,7 @@ def position_distance(s1, s2):
 
 class PickUpDropOffTask(Task[IThorMidLevelEnvironment]):
 
-    _actions = (MOVE_ARM_HEIGHT_P, MOVE_ARM_HEIGHT_M, MOVE_ARM_X_P, MOVE_ARM_X_M, MOVE_ARM_Y_P, MOVE_ARM_Y_M, MOVE_ARM_Z_P, MOVE_ARM_Z_M)# put back, MOVE_AHEAD, ROTATE_RIGHT, ROTATE_LEFT)#LATER_TODO do the actual pickup later, PICKUP)
+    _actions = (MOVE_ARM_HEIGHT_P, MOVE_ARM_HEIGHT_M, MOVE_ARM_X_P, MOVE_ARM_X_M, MOVE_ARM_Y_P, MOVE_ARM_Y_M, MOVE_ARM_Z_P, MOVE_ARM_Z_M, MOVE_AHEAD, ROTATE_RIGHT, ROTATE_LEFT)#TODO, PICKUP, DONE)
 
     def __init__(
             self,
@@ -305,6 +305,3 @@ class PickUpDropOffTask(Task[IThorMidLevelEnvironment]):
 
         return float(reward)
 
-
-class PickUpDropOffTaskWNav(PickUpDropOffTask):
-    _actions = (MOVE_ARM_HEIGHT_P, MOVE_ARM_HEIGHT_M, MOVE_ARM_X_P, MOVE_ARM_X_M, MOVE_ARM_Y_P, MOVE_ARM_Y_M, MOVE_ARM_Z_P, MOVE_ARM_Z_M, MOVE_AHEAD, ROTATE_RIGHT, ROTATE_LEFT, PICKUP, DONE)

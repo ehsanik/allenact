@@ -263,7 +263,6 @@ class PickupDropOffGeneralSampler(MidLevelArmTaskSampler):
         # for start arm from high up as a cheating, this block is very important. never remove
         initial_pose = scene_start_cheating_init_pose[scene]
         event1 = this_controller.step(dict(action='TeleportFull', x=initial_pose['x'], y=initial_pose['y'], z=initial_pose['z'], rotation=dict(x=0, y=initial_pose['rotation'], z=0), horizon=initial_pose['horizon']))
-        this_controller.step(dict(action='PausePhysicsAutoSim'))
         event2 = this_controller.step(dict(action='MoveMidLevelArm',  position=dict(x=0.0, y=0, z=0.35), **ADITIONAL_ARM_ARGS))
         event3 = this_controller.step(dict(action='MoveMidLevelArmHeight', y=0.8, **ADITIONAL_ARM_ARGS))
         if not(event1.metadata['lastActionSuccess'] and event2.metadata['lastActionSuccess'] and event3.metadata['lastActionSuccess']):
