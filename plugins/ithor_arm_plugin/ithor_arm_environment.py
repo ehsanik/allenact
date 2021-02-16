@@ -115,7 +115,7 @@ class IThorMidLevelEnvironment(IThorEnvironment):
         self.controller.docker_enabled = docker_enabled  # type: ignore
     def check_controller_version(self):
         if ARM_BUILD_NUMBER is not None:
-            assert ARM_BUILD_NUMBER in self.controller._build.url, 'Build number is not right, {} vs {}, use  pip3 install -e git+https://github.com/allenai/ai2thor.git@{}#egg=ai2thor'.format(self.controller._build.url, ARM_BUILD_NUMBER, ARM_BUILD_NUMBER)
+            assert ARM_BUILD_NUMBER in self.controller.build_url()[0], 'Build number is not right, {} vs {}, use  pip3 install -e git+https://github.com/allenai/ai2thor.git@{}#egg=ai2thor'.format(self.controller._build.url, ARM_BUILD_NUMBER, ARM_BUILD_NUMBER)
 
 
     def create_controller(self):

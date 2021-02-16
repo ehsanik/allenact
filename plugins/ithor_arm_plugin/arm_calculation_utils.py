@@ -64,7 +64,13 @@ def find_closest_inverse(deg):
     for k in saved_inverse_rotation_mats.keys():
         if abs(k - deg) < 5:
             return saved_inverse_rotation_mats[k]
-    raise Exception('Error', deg) #TODO make sure this never happens, near 360 or more than 360 or negative
+
+    # print('Oh Shoot', deg)
+    rotation = R.from_euler('xyz', [0, deg, 0], degrees=True)
+    result = rotation.as_matrix()
+    inverse = inverse_rot_trans_mat(result)
+    return inverse
+    # raise Exception('Error', deg) #TODO make sure this never happens, near 360 or more than 360 or negative
 
 
 def calc_inverse(deg):
