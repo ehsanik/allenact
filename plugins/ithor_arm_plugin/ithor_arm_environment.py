@@ -97,7 +97,9 @@ class IThorMidLevelEnvironment(IThorEnvironment):
         self._move_mag: Optional[float] = None
         self._grid_size: Optional[float] = None
         self._visibility_distance = visibility_distance
+        
         self._fov = fov
+
         self.restrict_to_initially_reachable_points = (
             restrict_to_initially_reachable_points
         )
@@ -117,9 +119,12 @@ class IThorMidLevelEnvironment(IThorEnvironment):
 
 
     def create_controller(self):
+        # #TODO remove
+        # self.env_args['fov'] = 100
         controller = Controller(
             **self.env_args
         )
+
         return controller
 
     def start(
