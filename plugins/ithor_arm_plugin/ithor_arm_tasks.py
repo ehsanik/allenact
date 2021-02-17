@@ -179,6 +179,9 @@ class PickUpDropOffTask(Task[IThorMidLevelEnvironment]):
                 ratio_distance_left = final_obj_distance_from_goal / original_distance
                 result['metric/average/ratio_distance_left'] = ratio_distance_left
                 result['metric/average/eplen_pickup'] = self.eplen_pickup
+                result['metric/average/dis_to_goal_obj_inhand'] = self.obj_distance_from_goal()
+            else:
+                result['metric/average/dis_to_obj_nopickup'] = self.arm_distance_from_obj()
 
             if self._success:
                 result['metric/average/eplen_success'] = result['ep_length']
@@ -196,7 +199,11 @@ class PickUpDropOffTask(Task[IThorMidLevelEnvironment]):
 
         action_str = self.class_action_names()[action]
 
+        #TODO remove
+        action_str = ROTATE_LEFT
+
         self._last_action_str = action_str
+
         self.env.step({"action": action_str})
         self.last_action_success = self.env.last_action_success
 
@@ -287,6 +294,7 @@ class PickUpDropOffTask(Task[IThorMidLevelEnvironment]):
             delta_arm_to_obj_distance_reward = 0
         else:
             delta_arm_to_obj_distance_reward = self.last_arm_to_obj_distance - current_obj_to_arm_distance
+        prev_obj_to_goal =self.last_arm_to_obj_distance
         self.last_arm_to_obj_distance = current_obj_to_arm_distance
         reward += delta_arm_to_obj_distance_reward
 
@@ -295,10 +303,15 @@ class PickUpDropOffTask(Task[IThorMidLevelEnvironment]):
             delta_obj_to_goal_distance_reward = 0
         else:
             delta_obj_to_goal_distance_reward = self.last_obj_to_goal_distance - current_obj_to_goal_distance
+        prev_obj_to_goal =self.last_obj_to_goal_distance
         self.last_obj_to_goal_distance = current_obj_to_goal_distance
         reward += delta_obj_to_goal_distance_reward
 
-
+        # #TODO remove
+        # print('reward', reward, 'obj2goal', delta_obj_to_goal_distance_reward, 'arm2obj', delta_arm_to_obj_distance_reward, 'object_picked_up', self.object_picked_up)
+        # print('original arm2obj',  prev_obj_to_goal , 'and then ', current_obj_to_arm_distance)
+        # print('original obj2goal', prev_obj_to_goal, 'and then ', current_obj_to_goal_distance)
+        # ForkedPdb().set_trace()
         # distance * 0.1 does not make sense because then it will not take any actions
 
         # add collision cost, maybe distance to goal objective,...

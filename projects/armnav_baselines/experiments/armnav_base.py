@@ -21,7 +21,7 @@ class ArmNavBaseConfig(ExperimentConfig, ABC):
     CAMERA_WIDTH = 224
     CAMERA_HEIGHT = 224
     SCREEN_SIZE = 224
-    MAX_STEPS = 200
+    MAX_STEPS = 120 #TODO back to 200
 
     def __init__(self):
         self.REWARD_CONFIG = {
