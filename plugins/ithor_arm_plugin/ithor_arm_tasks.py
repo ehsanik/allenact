@@ -41,7 +41,7 @@ def position_distance(s1, s2):
 
 class PickUpDropOffTask(Task[IThorMidLevelEnvironment]):
 
-    _actions = (MOVE_ARM_HEIGHT_P, MOVE_ARM_HEIGHT_M, MOVE_ARM_X_P, MOVE_ARM_X_M, MOVE_ARM_Y_P, MOVE_ARM_Y_M, MOVE_ARM_Z_P, MOVE_ARM_Z_M, MOVE_AHEAD, ROTATE_RIGHT, ROTATE_LEFT)#TODO, PICKUP, DONE)
+    _actions = (MOVE_ARM_HEIGHT_P, MOVE_ARM_HEIGHT_M, MOVE_ARM_X_P, MOVE_ARM_X_M, MOVE_ARM_Y_P, MOVE_ARM_Y_M, MOVE_ARM_Z_P, MOVE_ARM_Z_M, MOVE_AHEAD, ROTATE_RIGHT, ROTATE_LEFT)#, PICKUP, DONE)
 
     def __init__(
             self,
@@ -274,8 +274,8 @@ class PickUpDropOffTask(Task[IThorMidLevelEnvironment]):
         if self._took_end_action:
             reward += self.reward_configs['goal_success_reward'] if self._success else self.reward_configs['failed_stop_reward']
 
-        if self._last_action_str in [PICKUP, DONE]: #TODO this needs to be removed later, just a sanity check
-            reward -= 5
+        # if self._last_action_str in [PICKUP, DONE]: # this needs to be removed later, just a sanity check
+        #     reward -= 5
 
         #increase reward if object pickup and only do it once
         if not self.got_reward_for_pickup and self.object_picked_up:

@@ -64,7 +64,12 @@ def find_closest_inverse(deg):
     for k in saved_inverse_rotation_mats.keys():
         if abs(k - deg) < 5:
             return saved_inverse_rotation_mats[k]
-    raise Exception('Error', deg) #TODO make sure this never happens, near 360 or more than 360 or negative
+    #if it reaches here it means it had not calculated the degree before
+    rotation = R.from_euler('xyz', [0, deg, 0], degrees=True)
+    result = rotation.as_matrix()
+    inverse = inverse_rot_trans_mat(result)
+    print('WARNING: Had to calculate the matrix for ', deg)
+    return inverse
 
 
 def calc_inverse(deg):
@@ -75,7 +80,7 @@ def calc_inverse(deg):
 saved_inverse_rotation_mats = {i: calc_inverse(i) for i in range(0, 360, 45)}
 saved_inverse_rotation_mats[360] = saved_inverse_rotation_mats[0]
 
-def convert_world_to_agent_coordinate(world_obj, agent_state): #TODO update this on tests and jupyter notebooks
+def convert_world_to_agent_coordinate(world_obj, agent_state): #LATER_TODO update this on tests and jupyter notebooks
     # agent_rotation_matrix = make_rotation_matrix(agent_state['position'], agent_state['rotation'])
     position = agent_state['position']
     rotation = agent_state['rotation']

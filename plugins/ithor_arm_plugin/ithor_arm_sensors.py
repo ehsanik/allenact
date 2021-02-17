@@ -101,13 +101,13 @@ class RelativeObjectToGoalSensor(Sensor):
         relative_goal_state = convert_world_to_agent_coordinate(target_state, agent_state)
         relative_distance = diff_position(relative_current_obj, relative_goal_state)
         result = convert_state_to_tensor(dict(position=relative_distance))
-        if torch.any(result != result) or torch.any(torch.isinf(result)): #TODO remove this
-            print('relative agent obj to goal')
-            print(env.controller.last_event.metadata['agent']['position'])
-            print(goal_obj_id)
-            print('target state', target_state)
-            result[:] = 0
-            print('new result', result)
+        # if torch.any(result != result) or torch.any(torch.isinf(result)): # remove this
+        #     print('relative agent obj to goal')
+        #     print(env.controller.last_event.metadata['agent']['position'])
+        #     print(goal_obj_id)
+        #     print('target state', target_state)
+        #     result[:] = 0
+        #     print('new result', result)
         return result
 
 
@@ -137,13 +137,13 @@ class RelativeAgentArmToObjectSensor(Sensor):#TODO double check this to see if i
         relative_hand_state = convert_world_to_agent_coordinate(hand_state, env.controller.last_event.metadata['agent'])
         relative_distance = diff_position(relative_goal_obj, relative_hand_state)
         result = convert_state_to_tensor(dict(position=relative_distance))
-        if torch.any(result != result) or torch.any(torch.isinf(result)): #TODO remove this
-            print('relative agent arm to obj')
-            print(env.controller.last_event.metadata['agent']['position'])
-            print('goal_obj_id', goal_obj_id)
-            print('hand_state', hand_state)
-            result[:] = 0
-            print('new result', result)
+        # if torch.any(result != result) or torch.any(torch.isinf(result)): TODO remove this
+        #     print('relative agent arm to obj')
+        #     print(env.controller.last_event.metadata['agent']['position'])
+        #     print('goal_obj_id', goal_obj_id)
+        #     print('hand_state', hand_state)
+        #     result[:] = 0
+        #     print('new result', result)
         return result
 
 

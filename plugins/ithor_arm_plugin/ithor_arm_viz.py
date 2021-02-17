@@ -17,7 +17,7 @@ class LoggerVisualizer:
             exp_name = 'NoNameExp'
         now = datetime.now()
         self.exp_name = exp_name
-        log_dir = os.path.join('experiment_output/visualizations', exp_name, now.strftime("%m_%d_%Y_%H_%M_%S"), log_dir)
+        log_dir = os.path.join('experiment_output/visualizations', exp_name, now.strftime("%m_%d_%Y_%H_%M_%S_%f"), log_dir)
         self.log_dir = log_dir
         os.makedirs(self.log_dir, exist_ok=True)
         self.log_queue = []
@@ -83,7 +83,7 @@ class TestMetricLogger(LoggerVisualizer):
         # now = datetime.now()
         #
         #
-        # time_to_write = now.strftime("%m_%d_%Y_%H_%M_%S")
+        # time_to_write = now.strftime("%m_%d_%Y_%H_%M_%S_%f")
         # print('Loggigng', time_to_write, 'len', len(self.log_queue))
         #
         # pickup_success = episode_info.object_picked_up
@@ -106,7 +106,7 @@ class ImageVisualizer(LoggerVisualizer):
 
     def finish_episode(self, environment, episode_info, task_info):
         now = datetime.now()
-        time_to_write = now.strftime("%m_%d_%Y_%H_%M_%S")
+        time_to_write = now.strftime("%m_%d_%Y_%H_%M_%S_%f")
         time_to_write += 'log_ind_{}'.format(self.logger_index)
         self.logger_index += 1
         print('Loggigng', time_to_write, 'len', len(self.log_queue))
@@ -180,7 +180,7 @@ class ThirdViewVisualizer(LoggerVisualizer):
 
     def finish_episode(self, environment, episode_success, task_info):
         now = datetime.now()
-        time_to_write = now.strftime("%m_%d_%Y_%H_%M_%S")
+        time_to_write = now.strftime("%m_%d_%Y_%H_%M_%S_%f")
         print('Loggigng', time_to_write, 'len', len(self.log_queue))
 
         for i, img in enumerate(self.log_queue):

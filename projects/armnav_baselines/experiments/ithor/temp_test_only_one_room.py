@@ -35,8 +35,9 @@ class TmpOnly1RoomArmNaviThorRGBPPOExperimentConfig(
     TEST_SCENES = ['FloorPlan1_physics']
     VALID_SCENES = ['FloorPlan1_physics']
 
-
-    NUM_PROCESSES = 20
+    VISUALIZE = True
+    NUMBER_OF_TEST_PROCESS = 1
+    NUM_PROCESSES = 1
     MAX_STEPS = 400
 
 

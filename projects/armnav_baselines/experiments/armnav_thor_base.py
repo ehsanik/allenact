@@ -50,6 +50,8 @@ class ArmNavThorBaseConfig(ArmNavBaseConfig, ABC):
     VALID_SAMPLES_IN_SCENE = 1
     TEST_SAMPLES_IN_SCENE = 1
 
+    NUMBER_OF_TEST_PROCESS = 10
+
 
 
     def __init__(self):
@@ -92,7 +94,7 @@ class ArmNavThorBaseConfig(ArmNavBaseConfig, ABC):
             nprocesses = 1
             gpu_ids = [] if not torch.cuda.is_available() else self.VALID_GPU_IDS
         elif mode == "test":
-            nprocesses = 10 if torch.cuda.is_available() else 1
+            nprocesses = self.NUMBER_OF_TEST_PROCESS if torch.cuda.is_available() else 1
             gpu_ids = [] if not torch.cuda.is_available() else self.TEST_GPU_IDS
         else:
             raise NotImplementedError("mode must be 'train', 'valid', or 'test'.")

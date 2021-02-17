@@ -31,6 +31,7 @@ class ArmNaviThorRGBPPOExperimentConfig(
         PickedUpObjSensor(),
     ]
 
+    MAX_STEPS = 400
 
 
     @classmethod

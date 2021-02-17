@@ -119,8 +119,6 @@ class IThorMidLevelEnvironment(IThorEnvironment):
 
 
     def create_controller(self):
-        # #TODO remove
-        # self.env_args['fov'] = 100
         controller = Controller(
             **self.env_args
         )
@@ -246,6 +244,7 @@ class IThorMidLevelEnvironment(IThorEnvironment):
                 log_error('Arm was nan, There were this many inf nan', anything_changed)
                 log_error('list of actions', self.list_of_actions_so_far)
                 log_error('flawed_one', flawed_dict)
+                print('WARNING: NAN was found')
 
         return corrected_dict
 
