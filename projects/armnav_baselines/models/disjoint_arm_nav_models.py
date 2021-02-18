@@ -134,7 +134,7 @@ class DisjointArmNavBaselineActorCritic(ActorCriticModel[CategoricalDistr]):
         """
 
         # ForkedPdb().set_trace()
-        #TODO complete this!
+        #LATER_TODO complete this!
         ForkedPdb().set_trace()
         arm2obj_dist = self.relative_dist_embedding_pick(observations['relative_agent_arm_to_obj'])
         obj2goal_dist = self.relative_dist_embedding_drop(observations['relative_obj_to_goal'])

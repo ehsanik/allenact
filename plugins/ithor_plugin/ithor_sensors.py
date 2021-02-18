@@ -9,6 +9,7 @@ from plugins.ithor_plugin.ithor_environment import IThorEnvironment
 from plugins.ithor_plugin.ithor_tasks import ObjectNaviThorGridTask
 from plugins.robothor_plugin.robothor_environment import RoboThorEnvironment
 from plugins.robothor_plugin.robothor_tasks import PointNavTask, ObjectNavTask
+from utils.debugger_util import ForkedPdb
 from utils.misc_utils import prepare_locals_for_super
 
 
@@ -27,6 +28,23 @@ class RGBSensorThor(
     def frame_from_env(self, env: IThorEnvironment) -> np.ndarray:
         return env.current_frame.copy()
 
+
+class BlindSensorThor(
+    RGBSensor[
+        Union[IThorEnvironment, RoboThorEnvironment],
+        Union[Task[IThorEnvironment], Task[RoboThorEnvironment]],
+    ]
+):
+    """Sensor for RGB images in THOR.
+
+    Returns from a running IThorEnvironment instance, the current RGB
+    frame corresponding to the agent's egocentric view.
+    """
+
+    def frame_from_env(self, env: IThorEnvironment) -> np.ndarray:
+        result = env.current_frame.copy()
+        result.fill(0)
+        return result
 
 class GoalObjectTypeThorSensor(Sensor):
     def __init__(

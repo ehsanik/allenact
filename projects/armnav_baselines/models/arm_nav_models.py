@@ -138,14 +138,11 @@ class ArmNavBaselineActorCritic(ActorCriticModel[CategoricalDistr]):
         Tuple of the `ActorCriticOutput` and recurrent hidden state.
         """
 
-        # ForkedPdb().set_trace()
         arm2obj_dist = self.get_relative_distance_embedding(observations['relative_agent_arm_to_obj'])
         obj2goal_dist = self.get_relative_distance_embedding(observations['relative_obj_to_goal'])
         #LATER_TODO maybe relative arm to agent location would help too?
 
         perception_embed = self.visual_encoder(observations)
-        # if perception_embed.shape[0] > 20:
-        #     is_weight_nan(self)# remove
 
         pickup_bool = (observations['pickedup_object'])
         before_pickup = pickup_bool == 0 #not used because of our initialization
@@ -159,27 +156,14 @@ class ArmNavBaselineActorCritic(ActorCriticModel[CategoricalDistr]):
         x_cat = torch.cat(x, dim=1)  # type: ignore
         x_out, rnn_hidden_states = self.state_encoder(x_cat, memory.tensor("rnn"), masks)
 
-        # def is_bad(tensor_x):
-        #     return torch.any(tensor_x != tensor_x) or torch.any(torch.isinf(tensor_x))
-        #
-        # if is_bad(x_out) or is_bad(rnn_hidden_states) or is_bad(arm2obj_dist) or is_bad(obj2goal_dist) or is_bad(perception_embed) or is_bad(x_cat): # remove this
-        #     print('SOMETHING IS NOT RIGHT')
-        #     print('is_bad(x_out) or is_bad(rnn_hidden_states) or is_bad(arm2obj_dist) or is_bad(obj2goal_dist) or is_bad(perception_embed) or is_bad(x_cat)')
-        #     print(is_bad(x_out), is_bad(rnn_hidden_states), is_bad(arm2obj_dist), is_bad(obj2goal_dist), is_bad(perception_embed), is_bad(x_cat))
-        #     ForkedPdb().set_trace()
-        # try:
         actor_out = self.actor(x_out)
         critic_out = self.critic(x_out)
         actor_critic_output = ActorCriticOutput(
             distributions=actor_out, values=critic_out, extras={}
         )
-        # except Exception: TODO remove
-        #     print('Oh no we failed')
-        #     ForkedPdb().set_trace()
 
         updated_memory = memory.set_tensor('rnn', rnn_hidden_states)
 
-        # distributions, values = self.actor_and_critic(x_out)
         return (
             actor_critic_output,
             updated_memory,

@@ -14,7 +14,7 @@ class ArmNavMixInPPOConfig(ArmNavBaseConfig):
         num_mini_batch = 1
         update_repeats = 4
         num_steps = self.MAX_STEPS
-        save_interval = 50000
+        save_interval = 500000 # from 50k
         log_interval = 1000
         gamma = 0.99
         use_gae = True

@@ -4,7 +4,7 @@
 #sudo apt-get install python3-distutils
 #sudo apt-get install python3-apt
 #sudo python3 get-pip.py
-cd ~/embodied_rl
+cd ~/allenact
 sudo apt-get install xinit
 sudo python3 xstart.py&
 #sudo apt-get install python3-dev
