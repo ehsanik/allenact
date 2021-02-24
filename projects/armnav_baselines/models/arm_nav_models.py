@@ -61,7 +61,8 @@ class ArmNavBaselineActorCritic(ActorCriticModel[CategoricalDistr]):
         self._hidden_size = hidden_size
         self.object_type_embedding_size = obj_state_embedding_size
 
-        self.visual_encoder = SimpleCNN(self.observation_space, self._hidden_size, rgb_uuid='rgb_lowres', depth_uuid=None)
+        sensor_names = self.observation_space.spaces.keys()
+        self.visual_encoder = SimpleCNN(self.observation_space, self._hidden_size, rgb_uuid='rgb_lowres' if 'rgb_lowres' in sensor_names else None, depth_uuid='depth_lowres' if 'depth_lowres' in sensor_names else None)
 
         self.state_encoder = RNNStateEncoder(
             (self._hidden_size) + obj_state_embedding_size,
@@ -168,4 +169,3 @@ class ArmNavBaselineActorCritic(ActorCriticModel[CategoricalDistr]):
             actor_critic_output,
             updated_memory,
         )
-

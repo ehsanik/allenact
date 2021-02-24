@@ -3,7 +3,7 @@ from typing import Any, Dict, Optional, List, Union
 import gym
 import numpy as np
 
-from core.base_abstractions.sensor import Sensor, RGBSensor
+from core.base_abstractions.sensor import Sensor, RGBSensor, DepthSensor
 from core.base_abstractions.task import Task
 from plugins.ithor_plugin.ithor_environment import IThorEnvironment
 from plugins.ithor_plugin.ithor_tasks import ObjectNaviThorGridTask
@@ -27,24 +27,6 @@ class RGBSensorThor(
 
     def frame_from_env(self, env: IThorEnvironment) -> np.ndarray:
         return env.current_frame.copy()
-
-
-class BlindSensorThor(
-    RGBSensor[
-        Union[IThorEnvironment, RoboThorEnvironment],
-        Union[Task[IThorEnvironment], Task[RoboThorEnvironment]],
-    ]
-):
-    """Sensor for RGB images in THOR.
-
-    Returns from a running IThorEnvironment instance, the current RGB
-    frame corresponding to the agent's egocentric view.
-    """
-
-    def frame_from_env(self, env: IThorEnvironment) -> np.ndarray:
-        result = env.current_frame.copy()
-        result.fill(0)
-        return result
 
 class GoalObjectTypeThorSensor(Sensor):
     def __init__(

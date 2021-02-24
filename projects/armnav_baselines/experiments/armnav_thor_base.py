@@ -127,15 +127,17 @@ class ArmNavThorBaseConfig(ArmNavBaseConfig, ABC):
 
     @classmethod
     def make_sampler_fn(cls, **kwargs) -> TaskSampler:
-        exp_name = cls.__name__
+        from datetime import datetime
+        now = datetime.now()
+        exp_name_w_time = cls.__name__ + '_' + now.strftime("%m_%d_%Y_%H_%M_%S_%f")
         if cls.VISUALIZE:
             visualizers = [
-                ImageVisualizer(exp_name=exp_name),
+                ImageVisualizer(exp_name=exp_name_w_time),
             ]
 
             kwargs['visualizers'] = visualizers
         kwargs['objects'] = cls.OBJECT_TYPES
-        kwargs['exp_name'] = exp_name
+        kwargs['exp_name'] = exp_name_w_time
         return cls.TASK_SAMPLER(**kwargs)
 
     @staticmethod

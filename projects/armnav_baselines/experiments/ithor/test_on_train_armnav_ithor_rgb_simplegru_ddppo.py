@@ -34,6 +34,8 @@ class ArmNaviThorRGBPPOExperimentConfig(
     TOTAL_NUMBER_SCENES=ArmNaviThorBaseConfig.TOTAL_NUMBER_SCENES
 
     TEST_SCENES = ["FloorPlan{}_physics".format(str(i)) for i in range(1, TOTAL_NUMBER_SCENES + 1) if (i % 3 == 1 or i % 3 == 0) and i != 28] # last scenes are really bad
+    VISUALIZE = True
+
 
 
 

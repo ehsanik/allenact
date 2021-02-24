@@ -1,5 +1,5 @@
 absl-py==0.10.0
--e git+https://github.com/allenai/ai2thor.git@2afa985d898e961db57de3e3d582a366e0cc7a41#egg=ai2thor
+-e git+https://github.com/allenai/ai2thor.git@51aacd8a06e44412afe6ce9e046f05a481e16939#egg=ai2thor
 appdirs==1.4.4
 appnope==0.1.0
 astunparse==1.6.3

@@ -9,7 +9,7 @@ import gym
 
 from core.base_abstractions.task import Task
 
-from plugins.ithor_arm_plugin.ithor_arm_tasks import PickUpDropOffTask
+from plugins.ithor_arm_plugin.ithor_arm_tasks import PickUpDropOffTask, OnlyPickUpTask
 from plugins.ithor_arm_plugin.ithor_arm_environment import IThorMidLevelEnvironment, IThorMidLevelDepthEnvironment
 from core.base_abstractions.sensor import Sensor
 from core.base_abstractions.task import TaskSampler
@@ -78,6 +78,7 @@ class MidLevelArmTaskSampler(TaskSampler):
 
         if self.sampler_mode == 'test':
             self.visualizers.append(TestMetricLogger(exp_name=kwargs['exp_name']))
+
 
 
     def _create_environment(self, **kwargs) -> IThorMidLevelEnvironment:
@@ -364,6 +365,81 @@ class PickupDropOffGeneralSampler(MidLevelArmTaskSampler):
     #
     #     return result
 
+class OnlyPickupGeneralSampler(PickupDropOffGeneralSampler):
+    _TASK_TYPE = OnlyPickUpTask
+
+    #TODO remove
+    def next_task(self, force_advance_scene: bool = False) -> Optional[PickUpDropOffTask]:
+        if self.max_tasks is not None and self.max_tasks <= 0:
+            return None
+
+        if self.sampler_mode != 'train' and self.length <= 0:
+            return None
+
+
+        # source_data_point, target_data_point = self.get_source_target_indices()
+
+        scene = 'FloorPlan1_physics'
+
+        if self.env is None:
+            self.env = self._create_environment()
+
+        self.env.reset(scene_name=scene, agentMode="arm", agentControllerType="mid-level")
+
+        source_location = {'object_id': 'Tomato|-00.39|+01.14|-00.81', 'object_location': {'x': -0.8185595273971558, 'y': 1.0044000148773193, 'z': -2.2991013526916504}, 'scene_name': 'FloorPlan1_physics', 'countertop_id': 'CounterTop|-01.87|+00.95|-01.21', 'agent_pose': {'name': 'agent', 'position': {'x': -0.5, 'y': 0.900999128818512, 'z': -1.75}, 'rotation': {'x': -0.0, 'y': 270.0, 'z': 0.0}, 'cameraHorizon': 10.000000953674316, 'isStanding': True, 'inHighFrictionArea': False}, 'visibility': True}
+        target_location = {'position': {'x': 0.6847517490386963, 'y': 0.9388461112976074, 'z': -0.7700561881065369}, 'rotation': {'x': 0, 'y': 0, 'z': 0}}
+
+
+        task_info = {
+            'objectId': source_location['object_id'],
+            'countertop_id': source_location['countertop_id'],
+            "source_location": source_location,
+            'target_location': target_location,
+        }
+
+        this_controller = self.env
+
+        event = this_controller.step(dict(action = 'PlaceObjectAtPoint', objectId=source_location['object_id'], position=source_location['object_location']))
+        if event.metadata['lastActionSuccess'] == False:
+            print('oh no could not transport')
+        agent_state = source_location['agent_pose']
+
+
+        # for start arm from high up as a cheating, this block is very important. never remove
+        initial_pose = scene_start_cheating_init_pose[scene]
+        event1 = this_controller.step(dict(action='TeleportFull', x=initial_pose['x'], y=initial_pose['y'], z=initial_pose['z'], rotation=dict(x=0, y=initial_pose['rotation'], z=0), horizon=initial_pose['horizon']))
+        event2 = this_controller.step(dict(action='MoveMidLevelArm',  position=dict(x=0.0, y=0, z=0.35), **ADITIONAL_ARM_ARGS))
+        event3 = this_controller.step(dict(action='MoveMidLevelArmHeight', y=0.8, **ADITIONAL_ARM_ARGS))
+        if not(event1.metadata['lastActionSuccess'] and event2.metadata['lastActionSuccess'] and event3.metadata['lastActionSuccess']):
+            print('ARM MOVEMENT FAILED> SHOUD NEVER HAPPEN')
+            # print('scene', scene, initial_pose, ADITIONAL_ARM_ARGS)
+            # print(event1.metadata['actionReturn'] , event2.metadata['actionReturn'] , event3.metadata['actionReturn'])
+
+
+        event = this_controller.step(dict(action='TeleportFull', x=agent_state['position']['x'], y=agent_state['position']['y'], z=agent_state['position']['z'], rotation=dict(x=agent_state['rotation']['x'], y=agent_state['rotation']['y'], z=agent_state['rotation']['z']), horizon=agent_state['cameraHorizon']))
+        if event.metadata['lastActionSuccess'] == False:
+            print('oh no could not teleport')
+
+        should_visualize_goal_start = [x for x in self.visualizers if issubclass(type(x), ImageVisualizer)]
+        if len(should_visualize_goal_start) > 0:
+            task_info['visualization_source'] = {'object_id': 'Tomato|-00.39|+01.14|-00.81', 'object_location': {'x': -0.8185595273971558, 'y': 1.0044000148773193, 'z': -2.2991013526916504}, 'scene_name': 'FloorPlan1_physics', 'countertop_id': 'CounterTop|-01.87|+00.95|-01.21', 'agent_pose': {'name': 'agent', 'position': {'x': -0.5, 'y': 0.900999128818512, 'z': -1.75}, 'rotation': {'x': -0.0, 'y': 270.0, 'z': 0.0}, 'cameraHorizon': 10.000000953674316, 'isStanding': True, 'inHighFrictionArea': False}, 'visibility': True}
+            task_info['visualization_target'] =  {'object_id': 'Tomato|-00.39|+01.14|-00.81', 'object_location': {'x': 0.6847517490386963, 'y': 0.9388461112976074, 'z': -0.7700561881065369}, 'scene_name': 'FloorPlan1_physics', 'countertop_id': 'Stool|+00.70|+00.00|-00.51', 'agent_pose': {'name': 'agent', 'position': {'x': 1.25, 'y': 0.900999128818512, 'z': -0.75}, 'rotation': {'x': -0.0, 'y': 270.0, 'z': 0.0}, 'cameraHorizon': 10.000000953674316, 'isStanding': True, 'inHighFrictionArea': False}, 'visibility': True}
+
+
+        self._last_sampled_task = self._TASK_TYPE(
+            env=self.env,
+            sensors=self.sensors,
+            task_info=task_info,
+            max_steps=self.max_steps,
+            action_space=self._action_space,
+            visualizers=self.visualizers,
+            reward_configs=self.rewards_config,
+        )
+
+
+        # if task_info['objectId'] == 'Bread|-00.52|+01.17|-00.03' and task_info['countertop_id'] == 'CounterTop|-01.87|+00.95|-01.21':
+        #     ForkedPdb().set_trace()
+        return self._last_sampled_task
 
 class DepthPickDropGeneralSampler(PickupDropOffGeneralSampler):
 
@@ -376,6 +452,8 @@ class DepthPickDropGeneralSampler(PickupDropOffGeneralSampler):
         )
 
         return env
+
+
 
 class PickupDropOffGeneralSamplerDeterministic(PickupDropOffGeneralSampler): #LATER_TODO all the few shots should be with this one
 
@@ -421,6 +499,7 @@ class PickupDropOffGeneralSamplerDeterministic(PickupDropOffGeneralSampler): #LA
         # self.max_tasks -= 1
 
         return result
+
 
 
 def get_all_tuples_from_list(list):

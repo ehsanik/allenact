@@ -1,29 +1,50 @@
 import gym
 import torch
 
-from core.base_abstractions.sensor import DepthSensor, Sensor
+from core.base_abstractions.sensor import DepthSensor, Sensor, RGBSensor
 from plugins.ithor_arm_plugin.arm_calculation_utils import convert_world_to_agent_coordinate, convert_state_to_tensor, diff_position
 from plugins.ithor_arm_plugin.ithor_arm_constants import VALID_OBJECT_LIST
 from plugins.ithor_arm_plugin.ithor_arm_environment import IThorMidLevelEnvironment
 from plugins.ithor_plugin.ithor_environment import IThorEnvironment
 from core.base_abstractions.task import Task
 import numpy as np
-from typing import Dict, Any, List, Optional
+from typing import Dict, Any, List, Optional, Union
 
+from plugins.robothor_plugin.robothor_environment import RoboThorEnvironment
 from utils.debugger_util import ForkedPdb
 from utils.misc_utils import prepare_locals_for_super
 
-
-class DepthSensorThor(DepthSensor[IThorEnvironment, Task[IThorEnvironment]]):
-    """Sensor for RGB images in AI2-THOR.
+class DepthSensorThor(
+    DepthSensor[
+        Union[IThorEnvironment, RoboThorEnvironment],
+        Union[Task[IThorEnvironment], Task[RoboThorEnvironment]],
+    ]
+):
+    """Sensor for Depth images in THOR.
 
     Returns from a running IThorEnvironment instance, the current RGB
     frame corresponding to the agent's egocentric view.
     """
 
     def frame_from_env(self, env: IThorEnvironment) -> np.ndarray:
-
         return env.controller.last_event.depth_frame.copy()
+
+class BlindSensorThor(
+    RGBSensor[
+        Union[IThorEnvironment, RoboThorEnvironment],
+        Union[Task[IThorEnvironment], Task[RoboThorEnvironment]],
+    ]
+):
+    """Sensor for RGB images in THOR.
+
+    Returns from a running IThorEnvironment instance, the current RGB
+    frame corresponding to the agent's egocentric view.
+    """
+
+    def frame_from_env(self, env: IThorEnvironment) -> np.ndarray:
+        result = env.current_frame.copy()
+        result.fill(0)
+        return result
 
 
 class AgentRelativeCurrentObjectStateThorSensor(Sensor):

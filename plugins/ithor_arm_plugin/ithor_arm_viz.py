@@ -17,7 +17,7 @@ class LoggerVisualizer:
             exp_name = 'NoNameExp'
         now = datetime.now()
         self.exp_name = exp_name
-        log_dir = os.path.join('experiment_output/visualizations', exp_name, now.strftime("%m_%d_%Y_%H_%M_%S_%f"), log_dir)
+        log_dir = os.path.join('experiment_output/visualizations', exp_name, log_dir + '_' + now.strftime("%m_%d_%Y_%H_%M_%S_%f"))
         self.log_dir = log_dir
         os.makedirs(self.log_dir, exist_ok=True)
         self.log_queue = []
