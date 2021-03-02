@@ -312,6 +312,7 @@ class IThorMidLevelEnvironment(IThorEnvironment):
             self, action_dict: Dict[str, Union[str, int, float]]
     ) -> ai2thor.server.Event:
         """Take a step in the ai2thor environment."""
+
         action = typing.cast(str, action_dict["action"])
 
         skip_render = "renderImage" in action_dict and not action_dict["renderImage"]
@@ -323,6 +324,9 @@ class IThorMidLevelEnvironment(IThorEnvironment):
             action_dict["simplifyOPhysics"] = True
 
         # action_dict['manualInteract'] = True # we should remove this right?
+
+        if action_dict['action'] == 'TeleportFull':
+            action_dict['standing'] = True
 
         if action in ['PickUpMidLevel', 'DoneMidLevel']:
             action_dict['action'] = 'Pass'
