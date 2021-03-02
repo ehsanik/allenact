@@ -41,6 +41,8 @@ class TmpOnly1RoomArmNaviThorRGBPPOExperimentConfig(
     MAX_STEPS = 400?
 
 
+
+
     @classmethod
     def tag(cls):
         return cls.__name__

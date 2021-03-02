@@ -1,3 +1,4 @@
+from plugins.ithor_arm_plugin.ithor_arm_constants import ARM_BUILD_NUMBER
 from plugins.ithor_arm_plugin.ithor_arm_sensors import RelativeAgentArmToObjectSensor, RelativeObjectToGoalSensor, PickedUpObjSensor
 from plugins.ithor_plugin.ithor_sensors import RGBSensorThor
 
@@ -38,6 +39,10 @@ class TmpOnly1RoomArmNaviThorRGBPPOExperimentConfig(
 
     NUM_PROCESSES = 20
     MAX_STEPS = 200
+
+    def __init__(self):
+        super().__init__()
+        self.ENV_ARGS['commit_id'] = '90e99f80f21889ace9afeed94b5cbca94facd3e7' #side arm
 
 
     @classmethod
