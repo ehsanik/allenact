@@ -33,7 +33,7 @@ class PickUpOnlyArmNaviThorRGBPPOExperimentConfig(
     ]
     TASK_SAMPLER = OnlyPickupGeneralSampler
     MAX_STEPS = 120
-    NUM_PROCESSES = 25
+    NUM_PROCESSES = 40
 
     @classmethod
     def tag(cls):

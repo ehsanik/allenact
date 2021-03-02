@@ -38,7 +38,7 @@ class DepthArmNaviThorRGBPPOExperimentConfig(
         PickedUpObjSensor(),
     ]
 
-    MAX_STEPS = 400
+    MAX_STEPS = 400?
 
 
     def __init__(self):

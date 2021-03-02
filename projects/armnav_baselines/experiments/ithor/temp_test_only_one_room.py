@@ -38,7 +38,7 @@ class TmpOnly1RoomArmNaviThorRGBPPOExperimentConfig(
     VISUALIZE = True
     NUMBER_OF_TEST_PROCESS = 1
     NUM_PROCESSES = 1
-    MAX_STEPS = 400
+    MAX_STEPS = 400?
 
 
     @classmethod

@@ -181,6 +181,8 @@ class IThorMidLevelEnvironment(IThorEnvironment):
 
         self.reset_init_params(**kwargs)
         self.controller.reset(scene_name)
+        self.controller.step('PausePhysicsAutoSim')
+        self.controller.step(action='MakeAllObjectsMoveable')
 
         if self.object_open_speed != 1.0:
             self.controller.step(

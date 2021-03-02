@@ -1,6 +1,8 @@
 import torch
 from typing import Any, Dict, Optional, List
 
+from plugins.ithor_arm_plugin.ithor_arm_constants import scene_start_cheating_init_pose, ADITIONAL_ARM_ARGS
+
 
 def convert_state_to_tensor(state: Dict):
     result = []
@@ -116,3 +118,11 @@ def test_translation_stuff():
     eps = 0.01
     assert rotated['position']['x'] - (-2.1) < eps and rotated['position']['x'] - (1) < eps and rotated['position']['x'] - (-0.7) < eps
 
+def initialize_arm(controller):
+    # for start arm from high up as a cheating, this block is very important. never remove
+    scene = controller.last_event.metadata['sceneName']
+    initial_pose = scene_start_cheating_init_pose[scene]
+    event1 = controller.step(dict(action='TeleportFull', x=initial_pose['x'], y=initial_pose['y'], z=initial_pose['z'], rotation=dict(x=0, y=initial_pose['rotation'], z=0), horizon=initial_pose['horizon']))
+    event2 = controller.step(dict(action='MoveMidLevelArm',  position=dict(x=0.0, y=0, z=0.35), **ADITIONAL_ARM_ARGS))
+    event3 = controller.step(dict(action='MoveMidLevelArmHeight', y=0.8, **ADITIONAL_ARM_ARGS))
+    return event1, event2, event3

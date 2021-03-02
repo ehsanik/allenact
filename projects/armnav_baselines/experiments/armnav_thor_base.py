@@ -60,10 +60,6 @@ class ArmNavThorBaseConfig(ArmNavBaseConfig, ABC):
         self.ENV_ARGS = dict(
             width=self.CAMERA_WIDTH,
             height=self.CAMERA_HEIGHT,
-            # continuousMode=True,
-            # applyActionNoise=self.STOCHASTIC,
-            # agentType="stochastic",
-            # rotateStepDegrees=self.ROTATION_DEGREES,
             visibilityDistance=self.VISIBILITY_DISTANCE,
             gridSize=self.STEP_SIZE,
             snapToGrid=False,
