@@ -4,7 +4,8 @@ import numpy as np
 
 import imageio
 
-from plugins.ithor_arm_plugin.ithor_arm_constants import scene_start_cheating_init_pose
+from plugins.ithor_arm_plugin.arm_calculation_utils import initialize_arm
+from plugins.ithor_arm_plugin.ithor_arm_constants import scene_start_cheating_init_pose, reset_environment_and_additional_commands
 from plugins.ithor_arm_plugin.ithor_arm_constants import ADITIONAL_ARM_ARGS
 from utils.debugger_util import ForkedPdb
 import cv2
@@ -137,24 +138,28 @@ class ImageVisualizer(LoggerVisualizer):
         self.log_queue.append(image_tensor)
 
     def log_start_goal(self, env, task_info, tag, img_adr):
-        #TODO are we sure everything is done by this point metrics
+        #LATER_TODO are we sure everything is done by this point metrics
 
         object_location = task_info['object_location']
         object_id = task_info['object_id']
         agent_state = task_info['agent_pose']
         this_controller = env.controller
-        scene = this_controller.last_event.metadata['sceneName'] #TODO maybe we need to reset env actually
-        event = this_controller.step(dict(action = 'DropMidLevelHand'))
+        scene = this_controller.last_event.metadata['sceneName'] # maybe we need to reset env actually]
+        reset_environment_and_additional_commands(this_controller, scene)
+        # event = this_controller.step(dict(action = 'DropMidLevelHand'))
         event = this_controller.step(dict(action = 'PlaceObjectAtPoint', objectId=object_id, position=object_location))
         if event.metadata['lastActionSuccess'] == False:
             print('oh no could not transport')
 
         # for start arm from high up as a cheating, this block is very important. never remove
-        initial_pose = scene_start_cheating_init_pose[scene]
-        event1 = this_controller.step(dict(action='TeleportFull', x=initial_pose['x'], y=initial_pose['y'], z=initial_pose['z'], rotation=dict(x=0, y=initial_pose['rotation'], z=0), horizon=initial_pose['horizon']))
-        this_controller.step(dict(action='PausePhysicsAutoSim'))
-        event2 = this_controller.step(dict(action='MoveMidLevelArm',  position=dict(x=0.0, y=0, z=0.35), **ADITIONAL_ARM_ARGS))
-        event3 = this_controller.step(dict(action='MoveMidLevelArmHeight', y=0.8, **ADITIONAL_ARM_ARGS))
+        event1, event2, event3 = initialize_arm(this_controller)
+        # initial_pose = scene_start_cheating_init_pose[scene]
+        # event1 = this_controller.step(dict(action='TeleportFull', x=initial_pose['x'], y=initial_pose['y'], z=initial_pose['z'], rotation=dict(x=0, y=initial_pose['rotation'], z=0), horizon=initial_pose['horizon']))
+        # this_controller.step(dict(action='PausePhysicsAutoSim'))
+        # event2 = this_controller.step(dict(action='MoveMidLevelArm',  position=dict(x=0.0, y=0, z=0.35), **ADITIONAL_ARM_ARGS))
+        # event3 = this_controller.step(dict(action='MoveMidLevelArmHeight', y=0.8, **ADITIONAL_ARM_ARGS))
+
+
         if not(event1.metadata['lastActionSuccess'] and event2.metadata['lastActionSuccess'] and event3.metadata['lastActionSuccess']):
             print('ARM MOVEMENT FAILED> SHOUD NEVER HAPPEN')
             # print('scene', scene, initial_pose, ADITIONAL_ARM_ARGS)

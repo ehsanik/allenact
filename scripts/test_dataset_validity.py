@@ -4,6 +4,9 @@ import ai2thor.controller
 import ai2thor
 import json
 import sys, os
+
+from plugins.ithor_arm_plugin.ithor_arm_constants import reset_environment_and_additional_commands
+
 sys.path.append(os.path.abspath('.'))
 
 from plugins.ithor_arm_plugin.arm_calculation_utils import initialize_arm
@@ -18,11 +21,8 @@ PRUNING = False
 
 
 def test_initial_location(controller):
-
     for s in SCENES:
-        controller.reset(scene=s)
-        controller.step('PausePhysicsAutoSim')
-        controller.step(action='MakeAllObjectsMoveable')
+        reset_environment_and_additional_commands(controller, s)
         event1, event2, event3 = initialize_arm(controller)
         if not (event1.metadata['lastActionSuccess'] and event2.metadata['lastActionSuccess'] and event3.metadata['lastActionSuccess']):
             return False, 'failed for {}'.format(s)
@@ -30,9 +30,7 @@ def test_initial_location(controller):
 
 def check_datapoint_correctness(controller, source_location):
     scene = source_location['scene_name']
-    controller.reset(scene=scene)
-    controller.step('PausePhysicsAutoSim')
-    controller.step(action='MakeAllObjectsMoveable')
+    reset_environment_and_additional_commands(controller, scene)
     event_place_obj = controller.step(dict(action = 'PlaceObjectAtPoint', objectId=source_location['object_id'], position=source_location['object_location']))
     _1, _2, _3 = initialize_arm(controller) #This is checked before
     agent_state = source_location['agent_pose']
@@ -89,12 +87,13 @@ def prune_data_points(controller):
 if __name__ == '__main__':
 
     controller = ai2thor.controller.Controller(
-        gridSize=0.25,
-        width=224, height=224, agentMode='arm', fieldOfView=100,
-        agentControllerType='mid-level',
-        server_class=ai2thor.fifo_server.FifoServer, visibilityScheme='Distance',
-        useMassThreshold = True, massThreshold = 10,
-        visibilityDistance = 1.25
+        **ENV_ARGS
+        # gridSize=0.25,
+        # width=224, height=224, agentMode='arm', fieldOfView=100,
+        # agentControllerType='mid-level',
+        # server_class=ai2thor.fifo_server.FifoServer, visibilityScheme='Distance',
+        # useMassThreshold = True, massThreshold = 10,
+        # visibilityDistance = 1.25
     )
 
     print('Testing initial location')

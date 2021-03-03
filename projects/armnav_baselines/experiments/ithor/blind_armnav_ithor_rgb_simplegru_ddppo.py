@@ -36,7 +36,8 @@ class BlindArmNaviThorRGBPPOExperimentConfig(
         PickedUpObjSensor(),
     ]
 
-    MAX_STEPS = 400?
+    #
+    MAX_STEPS = 200
 
     @classmethod
     def tag(cls):

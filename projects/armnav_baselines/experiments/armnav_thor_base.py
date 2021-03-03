@@ -14,6 +14,7 @@ from core.base_abstractions.experiment_config import MachineParams
 from core.base_abstractions.preprocessor import SensorPreprocessorGraph
 from core.base_abstractions.sensor import SensorSuite, ExpertActionSensor
 from core.base_abstractions.task import TaskSampler
+from plugins.ithor_arm_plugin.ithor_arm_constants import ENV_ARGS
 from plugins.ithor_arm_plugin.ithor_arm_task_samplers import PickupDropOffGeneralSampler
 from plugins.ithor_arm_plugin.ithor_arm_viz import ImageVisualizer, TestMetricLogger
 from projects.armnav_baselines.experiments.armnav_base import ArmNavBaseConfig
@@ -57,19 +58,8 @@ class ArmNavThorBaseConfig(ArmNavBaseConfig, ABC):
     def __init__(self):
         super().__init__()
 
-        self.ENV_ARGS = dict(
-            width=self.CAMERA_WIDTH,
-            height=self.CAMERA_HEIGHT,
-            visibilityDistance=self.VISIBILITY_DISTANCE,
-            gridSize=self.STEP_SIZE,
-            snapToGrid=False,
-            agentMode='arm',
-            agentControllerType='mid-level',
-            useMassThreshold = True, massThreshold = 10,
-            include_private_scenes=False,
-            server_class=ai2thor.fifo_server.FifoServer,
-            # renderDepthImage=any(isinstance(s, DepthSensorThor) for s in self.SENSORS),
-        )
+        assert self.CAMERA_WIDTH == 224 and self.CAMERA_HEIGHT == 224 and self.VISIBILITY_DISTANCE == 1 and self.STEP_SIZE == 0.25
+        self.ENV_ARGS = ENV_ARGS
 
     def machine_params(self, mode="train", **kwargs):
         sampler_devices: Sequence[int] = []

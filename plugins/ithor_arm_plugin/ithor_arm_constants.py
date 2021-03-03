@@ -1,11 +1,4 @@
-# ADITIONAL_ARM_ARGS = {
-#     'disableRendering': False,
-#     'restrictMovement': False,
-#     'waitForFixedUpdate': False,
-#     'returnToStart': True,
-#     'speed': 2,
-#     'moveSpeed': 5,
-# }
+import ai2thor
 
 # BUILD_NUMBER = None
 # ARM_BUILD_NUMBER = 'a2ff21ad7fa8409b188dbd30781e448a4cf2c8fe'
@@ -18,7 +11,7 @@ ARM_MIN_HEIGHT = 0.450998873
 ARM_MAX_HEIGHT = 1.8009994
 MOVE_ARM_CONSTANT = 0.05 #Do we need to change this?
 MOVE_ARM_HEIGHT_CONSTANT = MOVE_ARM_CONSTANT # Can not do the next one because the changes in height becomes random. maybe look into this later on
-# MOVE_ARM_HEIGHT_CONSTANT = MOVE_ARM_CONSTANT / (ARM_MAX_HEIGHT - ARM_MIN_HEIGHT) #TODO this is very important
+# MOVE_ARM_HEIGHT_CONSTANT = MOVE_ARM_CONSTANT / (ARM_MAX_HEIGHT - ARM_MIN_HEIGHT) #LATER_TODO
 
 ADITIONAL_ARM_ARGS = {
     'disableRendering': True,
@@ -30,10 +23,34 @@ ADITIONAL_ARM_ARGS = {
     # 'move_constant': 0.05,
 }
 
+ENV_ARGS = dict(
+    gridSize=0.25,
+    width=224, height=224,
+    visibilityDistance=1.0,
+    agentMode='arm', fieldOfView=100,
+    agentControllerType='mid-level',
+    server_class=ai2thor.fifo_server.FifoServer,
+    useMassThreshold = True, massThreshold = 10,
+    autoSimulation=False, autoSyncTransforms=False
+    )
+
 TRAIN_OBJECTS = ['Apple', 'Bread', 'Tomato', 'Lettuce', 'Pot', 'Mug']
 TEST_OBJECTS = ['Potato', 'SoapBottle', 'Pan', 'Egg', 'Spatula', 'Cup']
 
 
+def make_all_objects_unbreakable(controller):
+        all_breakable_objects = [o['objectType'] for o in controller.last_event.metadata['objects'] if o['breakable'] is True]
+        all_breakable_objects = set(all_breakable_objects)
+        for obj_type in all_breakable_objects:
+            controller.step(action='MakeObjectsOfTypeUnbreakable', objectType=obj_type)
+
+
+def reset_environment_and_additional_commands(controller, scene_name):
+    controller.reset(scene_name)
+    controller.step('PausePhysicsAutoSim')
+    controller.step(action='MakeAllObjectsMoveable')
+    make_all_objects_unbreakable(controller)
+    return
 
 # Apple, Bread, Tomato, Lettuce, Pot, Mug,Potato, SoapBottle, Pan, Egg, Spatula, Cup
 

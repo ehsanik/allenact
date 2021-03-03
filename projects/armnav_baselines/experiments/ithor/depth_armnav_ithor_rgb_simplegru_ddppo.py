@@ -1,6 +1,7 @@
 import ai2thor
 import gym
 
+from plugins.ithor_arm_plugin.ithor_arm_constants import ENV_ARGS
 from plugins.ithor_arm_plugin.ithor_arm_sensors import RelativeAgentArmToObjectSensor, RelativeObjectToGoalSensor, PickedUpObjSensor, DepthSensorThor
 from plugins.ithor_arm_plugin.ithor_arm_tasks import PickUpDropOffTask
 from plugins.ithor_plugin.ithor_sensors import RGBSensorThor
@@ -38,25 +39,27 @@ class DepthArmNaviThorRGBPPOExperimentConfig(
         PickedUpObjSensor(),
     ]
 
-    MAX_STEPS = 400?
+    MAX_STEPS = 200
 
 
     def __init__(self):
         super().__init__()
 
-        self.ENV_ARGS = dict(
-            width=self.CAMERA_WIDTH,
-            height=self.CAMERA_HEIGHT,
-            visibilityDistance=self.VISIBILITY_DISTANCE,
-            gridSize=self.STEP_SIZE,
-            snapToGrid=False,
-            agentMode='arm',
-            agentControllerType='mid-level',
-            useMassThreshold = True, massThreshold = 10,
-            include_private_scenes=False,
-            server_class=ai2thor.fifo_server.FifoServer,
-            renderDepthImage=True,
-        )
+        assert self.CAMERA_WIDTH == 224 and self.CAMERA_HEIGHT == 224 and self.VISIBILITY_DISTANCE == 1 and self.STEP_SIZE == 0.25
+        self.ENV_ARGS = {**ENV_ARGS,  'renderDepthImage':True}
+        # self.ENV_ARGS = dict(
+        #     width=self.CAMERA_WIDTH,
+        #     height=self.CAMERA_HEIGHT,
+        #     visibilityDistance=self.VISIBILITY_DISTANCE,
+        #     gridSize=self.STEP_SIZE,
+        #     snapToGrid=False,
+        #     agentMode='arm',
+        #     agentControllerType='mid-level',
+        #     useMassThreshold = True, massThreshold = 10,
+        #     include_private_scenes=False,
+        #     server_class=ai2thor.fifo_server.FifoServer,
+        #     renderDepthImage=True,
+        # )
 
     @classmethod
     def create_model(cls, **kwargs) -> nn.Module:

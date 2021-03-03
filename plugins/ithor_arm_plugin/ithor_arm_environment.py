@@ -20,7 +20,7 @@ from plugins.ithor_plugin.ithor_environment import IThorEnvironment
 from plugins.ithor_plugin.ithor_util import round_to_factor
 from plugins.ithor_plugin.ithor_constants import VISIBILITY_DISTANCE, FOV
 from utils.debugger_util import ForkedPdb
-from plugins.ithor_arm_plugin.ithor_arm_constants import ADITIONAL_ARM_ARGS, ARM_MIN_HEIGHT, ARM_MAX_HEIGHT, MOVE_ARM_HEIGHT_CONSTANT, MOVE_ARM_CONSTANT, ARM_BUILD_NUMBER
+from plugins.ithor_arm_plugin.ithor_arm_constants import ADITIONAL_ARM_ARGS, ARM_MIN_HEIGHT, ARM_MAX_HEIGHT, MOVE_ARM_HEIGHT_CONSTANT, MOVE_ARM_CONSTANT, ARM_BUILD_NUMBER, reset_environment_and_additional_commands
 
 
 class IThorMidLevelEnvironment(IThorEnvironment):
@@ -180,9 +180,7 @@ class IThorMidLevelEnvironment(IThorEnvironment):
             scene_name = self.controller.last_event.metadata["sceneName"]
 
         self.reset_init_params(**kwargs)
-        self.controller.reset(scene_name)
-        self.controller.step('PausePhysicsAutoSim')
-        self.controller.step(action='MakeAllObjectsMoveable')
+        reset_environment_and_additional_commands(self.controller, scene_name)
 
         if self.object_open_speed != 1.0:
             self.controller.step(
@@ -199,8 +197,7 @@ class IThorMidLevelEnvironment(IThorEnvironment):
                 )
             )
         self._initially_reachable_points = self.last_action_return
-        self.controller.step(action='MakeAllObjectsMoveable')
-        self.controller.step(dict(action='PausePhysicsAutoSim'))
+
         self.list_of_actions_so_far = []
 
     def randomize_agent_location(
@@ -230,7 +227,7 @@ class IThorMidLevelEnvironment(IThorEnvironment):
                 corrected_dict[k] = 0
                 anything_changed += 1
         if anything_changed > 0:
-            #TODO this function is seriously bad
+            #LATER_TODO this function is seriously bad TODO
             log_error_dir ='experiment_output/error_logs'
             os.makedirs(log_error_dir, exist_ok=True)
             current_time_file = datetime.now().strftime("%m_%d_%Y_%H_%M_%S_%f.txt")
