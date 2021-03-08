@@ -34,6 +34,7 @@ class TmpOnly1RoomArmNaviThorRGBPPOExperimentConfig(
     TRAIN_SCENES = ['FloorPlan1_physics']
     TEST_SCENES = ['FloorPlan1_physics']
     VALID_SCENES = ['FloorPlan1_physics']
+    # OBJECT_TYPES = ['Apple'] TODO remove
 
 
     NUM_PROCESSES = 20

@@ -1,11 +1,15 @@
 import ai2thor
+import ai2thor.fifo_server
 
 # BUILD_NUMBER = None
 # ARM_BUILD_NUMBER = 'a2ff21ad7fa8409b188dbd30781e448a4cf2c8fe'
 # ARM_BUILD_NUMBER = '2afa985d898e961db57de3e3d582a366e0cc7a41'
 # ARM_BUILD_NUMBER = '65cb9da687c30a8a738e00b8bb21d7536b83fd07'
 # ARM_BUILD_NUMBER = 'df6c729530c0ce9d41f98b5c59f0293ecccaad42'
-ARM_BUILD_NUMBER = '51aacd8a06e44412afe6ce9e046f05a481e16939'
+# ARM_BUILD_NUMBER = '51aacd8a06e44412afe6ce9e046f05a481e16939'
+# ARM_BUILD_NUMBER = '2a98a22cfd2e59b2dbdd7bfa036f191afd305fad'
+# ARM_BUILD_NUMBER = '12a36839a9670e70ffe6f2171212147ce306d818'
+ARM_BUILD_NUMBER = 'a1d3d6ad89b7ec06b3a406f391e847222dde5a37'
 
 ARM_MIN_HEIGHT = 0.450998873
 ARM_MAX_HEIGHT = 1.8009994
@@ -31,7 +35,7 @@ ENV_ARGS = dict(
     agentControllerType='mid-level',
     server_class=ai2thor.fifo_server.FifoServer,
     useMassThreshold = True, massThreshold = 10,
-    autoSimulation=False, autoSyncTransforms=False
+    autoSimulation=False, autoSyncTransforms=True
     )
 
 TRAIN_OBJECTS = ['Apple', 'Bread', 'Tomato', 'Lettuce', 'Pot', 'Mug']
@@ -47,7 +51,8 @@ def make_all_objects_unbreakable(controller):
 
 def reset_environment_and_additional_commands(controller, scene_name):
     controller.reset(scene_name)
-    controller.step('PausePhysicsAutoSim')
+    controller.step('PausePhysicsAutoSim', autoSyncTransforms=False)
+    # controller.step('PausePhysicsAutoSim')
     controller.step(action='MakeAllObjectsMoveable')
     make_all_objects_unbreakable(controller)
     return

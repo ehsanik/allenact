@@ -2,6 +2,7 @@ import os
 from abc import ABC
 
 from constants import ABS_PATH_OF_TOP_LEVEL_DIR
+from plugins.ithor_arm_plugin.ithor_arm_constants import TRAIN_OBJECTS
 from projects.armnav_baselines.experiments.armnav_thor_base import (
     ArmNavThorBaseConfig,
 )
@@ -26,9 +27,7 @@ class ArmNaviThorBaseConfig(ArmNavThorBaseConfig, ABC):
 
     OBJECT_TYPES = tuple(
         sorted(
-            [
-                'Apple', 'Bread', 'Tomato', 'Lettuce', 'Pot', 'Mug'
-            ]
+            TRAIN_OBJECTS
         )
     )
 

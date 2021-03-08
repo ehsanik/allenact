@@ -32,7 +32,7 @@ class PickUpOnlyArmNaviThorRGBPPOExperimentConfig(
         PickedUpObjSensor(),
     ]
     TASK_SAMPLER = OnlyPickupGeneralSampler
-    MAX_STEPS = 120
+    MAX_STEPS = 200
     NUM_PROCESSES = 40
 
     @classmethod

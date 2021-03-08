@@ -99,7 +99,7 @@ class PickUpDropOffTask(Task[IThorMidLevelEnvironment]):
         #KIANA ignore rotation for now
         position1 = s1['position']
         position2 = s2['position']
-        eps = MOVE_ARM_CONSTANT
+        eps = MOVE_ARM_CONSTANT * 2 #TODO we need to talk about this. is it okay to have this big of a distance? or should we only do this for y because that is the hardest?
         return (abs(position1['x'] - position2['x']) < eps and abs(position1['y'] - position2['y']) < eps and abs(position1['z'] - position2['z']) < eps)
 
 
@@ -196,6 +196,31 @@ class PickUpDropOffTask(Task[IThorMidLevelEnvironment]):
 
         action_str = self.class_action_names()[action]
 
+
+        # TODO remove
+        # action_sequence = ['MoveAheadContinuous', 'RotateRightContinuous', 'RotateLeftContinuous', 'RotateLeftContinuous', 'MoveAheadContinuous', 'MoveAheadContinuous', 'MoveArmXM', 'MoveArmXM', 'MoveArmXM', 'MoveArmXM', 'MoveArmXM', 'MoveArmXM', 'MoveArmXM', 'MoveArmXM', 'MoveArmZP', 'MoveArmZP', 'MoveArmZP', 'MoveArmZP', 'MoveArmZP', 'MoveArmZP', 'MoveArmZP', 'MoveArmZP', 'MoveArmZP', 'MoveArmZP', 'MoveArmZM', 'MoveArmHeightP', 'MoveArmHeightP', 'MoveArmHeightP', 'MoveArmHeightP', 'MoveArmHeightM', 'MoveArmHeightM', 'MoveArmHeightM', 'MoveArmHeightM', 'MoveArmHeightM', 'MoveArmHeightM', 'MoveArmHeightM', 'MoveArmHeightM', 'MoveArmXM', 'MoveArmXM', 'MoveArmZM', 'MoveArmZP', 'MoveArmXM', 'MoveArmXM', 'MoveArmHeightM', 'RotateRightContinuous', 'RotateRightContinuous', 'RotateRightContinuous', 'MoveAheadContinuous', 'RotateRightContinuous', 'MoveArmHeightP', 'MoveArmHeightP', 'MoveArmHeightP', 'MoveArmHeightP', 'MoveArmHeightP', 'MoveArmHeightP', 'RotateRightContinuous', 'MoveAheadContinuous', 'MoveAheadContinuous', 'MoveAheadContinuous', 'MoveArmXM', 'MoveArmXM', 'MoveArmXM', 'MoveArmZM', 'MoveArmZM', 'MoveArmZM', 'MoveArmZM', 'MoveArmZM', 'MoveArmHeightP', 'MoveArmHeightM', 'MoveArmHeightM', 'MoveArmHeightM', 'MoveArmHeightM', 'MoveArmHeightM', 'MoveArmZM', 'MoveArmZM', 'MoveArmZM', 'MoveArmZM', 'MoveArmHeightP', 'MoveArmHeightM', 'MoveArmHeightM', 'MoveArmHeightM']
+        # try:
+        #     action_str = action_sequence[self.action_index]
+        #     self.action_index += 1
+        # except Exception:
+        #     action_str = action_sequence[0]
+        #     self.action_index = 1
+
+
+        # remove
+        # self.manual_running = False
+        # if self.manual_running: #manual running
+        #     self.env.controller.step('Pass')
+        #     action_translator = {
+        #         'u': MOVE_ARM_HEIGHT_P, 'j': MOVE_ARM_HEIGHT_M, 's': MOVE_ARM_X_P, 'a': MOVE_ARM_X_M, '4': MOVE_ARM_Y_P, '3': MOVE_ARM_Y_M, 'w': MOVE_ARM_Z_P, 'z': MOVE_ARM_Z_M, 'mm': MOVE_AHEAD, 'rr': ROTATE_RIGHT, 'll': ROTATE_LEFT
+        #     }
+        #     act='something'
+        #     #To see all details self.env.list_of_actions_so_far
+        #     while(act not in action_translator):
+        #         ForkedPdb().set_trace()
+        #     action_str = action_translator[act]
+        #     #We should set the action here
+
         self._last_action_str = action_str
         self.env.step({"action": action_str})
         self.last_action_success = self.env.last_action_success
@@ -209,6 +234,10 @@ class PickUpDropOffTask(Task[IThorMidLevelEnvironment]):
         object_id = self.task_info['objectId']
 
         success_finished_task = False
+
+        if self.manual_running:
+            print(self.env.controller.last_event)
+
 
         if not self.object_picked_up:
 
@@ -232,6 +261,10 @@ class PickUpDropOffTask(Task[IThorMidLevelEnvironment]):
             self._took_end_action = True
             self._success = True
             self.last_action_success = True
+
+        if self.manual_running:
+            print('pickedup', self.object_picked_up, 'arm_distance_from_obj', self.arm_distance_from_obj(), 'obj_distance_from_goal', self.obj_distance_from_goal())
+
 
         step_result = RLStepResult(
             observation=self.get_observations(),
@@ -298,6 +331,9 @@ class PickUpDropOffTask(Task[IThorMidLevelEnvironment]):
         self.last_obj_to_goal_distance = current_obj_to_goal_distance
         reward += delta_obj_to_goal_distance_reward
 
+        # remove
+        # if self.manual_running:
+        #     print('delta obj2arm', delta_arm_to_obj_distance_reward, 'delta obj2goal', delta_obj_to_goal_distance_reward, 'reward', reward)
 
         # distance * 0.1 does not make sense because then it will not take any actions
 
@@ -338,6 +374,7 @@ class OnlyPickUpTask(PickUpDropOffTask):
 
         action_str = self.class_action_names()[action]
 
+
         self._last_action_str = action_str
         self.env.step({"action": action_str})
         self.last_action_success = self.env.last_action_success
@@ -352,6 +389,8 @@ class OnlyPickUpTask(PickUpDropOffTask):
 
         success_finished_task = False
 
+
+
         pickupable_objects = self.env.get_pickupable_objects()
 
         if object_id in pickupable_objects:
@@ -363,7 +402,8 @@ class OnlyPickUpTask(PickUpDropOffTask):
                 self.eplen_pickup = self._num_steps_taken + 1 # plus one because this step has not been counted yet
                 success_finished_task = True
             else:
-                print('Tried picking up but failed')
+                print('WARNINIG Tried picking up but failed')
+
 
         if success_finished_task:
             self._took_end_action = True

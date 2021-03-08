@@ -231,6 +231,7 @@ class PickupDropOffGeneralSampler(MidLevelArmTaskSampler):
 
         source_data_point, target_data_point = self.get_source_target_indices()
 
+
         scene = source_data_point['scene_name']
 
         assert source_data_point['object_id'] == target_data_point['object_id']
@@ -270,7 +271,7 @@ class PickupDropOffGeneralSampler(MidLevelArmTaskSampler):
             # print(event1.metadata['actionReturn'] , event2.metadata['actionReturn'] , event3.metadata['actionReturn'])
 
 
-        event = this_controller.step(dict(action='TeleportFull', x=agent_state['position']['x'], y=agent_state['position']['y'], z=agent_state['position']['z'], rotation=dict(x=agent_state['rotation']['x'], y=agent_state['rotation']['y'], z=agent_state['rotation']['z']), horizon=agent_state['cameraHorizon']))
+        event = this_controller.step(dict(action='TeleportFull', standing=True, x=agent_state['position']['x'], y=agent_state['position']['y'], z=agent_state['position']['z'], rotation=dict(x=agent_state['rotation']['x'], y=agent_state['rotation']['y'], z=agent_state['rotation']['z']), horizon=agent_state['cameraHorizon']))
         if event.metadata['lastActionSuccess'] == False:
             print('oh no could not teleport')
 
@@ -322,6 +323,13 @@ class PickupDropOffGeneralSampler(MidLevelArmTaskSampler):
 
 
     def get_source_target_indices(self):
+        # TODO remove
+        # source_location={'object_id': 'Apple|-00.47|+01.15|+00.48', 'object_location': {'x': -1.2908389568328857, 'y': 1.0044000148773193, 'z': -2.6678121089935303}, 'scene_name': 'FloorPlan1_physics', 'countertop_id': 'CounterTop|-01.87|+00.95|-01.21', 'agent_pose': {'name': 'agent', 'position': {'x': -0.5, 'y': 0.900999128818512, 'z': -1.75}, 'rotation': {'x': -0.0, 'y': 270.0, 'z': 0.0}, 'cameraHorizon': 10.000000953674316, 'isStanding': True, 'inHighFrictionArea': False}, 'visibility': True}
+        # target_location = {'object_id': 'Apple|-00.47|+01.15|+00.48', 'object_location': {'x': -0.2859378755092621, 'y': 1.1630845069885254, 'z': -0.8089651465415955}, 'scene_name': 'FloorPlan1_physics', 'countertop_id': 'CounterTop|-01.87|+00.95|-01.21', 'agent_pose': {'name': 'agent', 'position': {'x': -0.5, 'y': 0.900999128818512, 'z': -1.75}, 'rotation': {'x': -0.0, 'y': 270.0, 'z': 0.0}, 'cameraHorizon': 10.000000953674316, 'isStanding': True, 'inHighFrictionArea': False}, 'visibility': True}
+        # return source_location, target_location
+
+
+
         # TODO remove return ({'object_id': 'Bread|-00.52|+01.17|-00.03', 'object_location': {'x': -1.054699182510376, 'y': 1.0044000148773193, 'z': -2.5449085235595703}, 'scene_name': 'FloorPlan1_physics', 'countertop_id': 'CounterTop|-01.87|+00.95|-01.21', 'agent_pose': {'name': 'agent', 'position': {'x': -0.5, 'y': 0.900999128818512, 'z': -1.75}, 'rotation': {'x': -0.0, 'y': 270.0, 'z': 0.0}, 'cameraHorizon': 10.000000953674316, 'isStanding': True, 'inHighFrictionArea': False}, 'visibility': True}, {'object_id': 'Bread|-00.52|+01.17|-00.03', 'object_location': {'x': -0.3304286599159241,'y': 1.2070269584655762, 'z': 0.12633016705513}, 'scene_name': 'FloorPlan1_physics', 'countertop_id': 'CounterTop|-00.08|+01.15|00.00', 'agent_pose': {'name': 'agent', 'position': {'x': -1.25, 'y': 0.900999128818512, 'z': -1.25}, 'rotation': {'x': -0.0, 'y': 270.0, 'z': 0.0}, 'cameraHorizon': 10.000000953674316, 'isStanding': True, 'inHighFrictionArea': False}, 'visibility': True})
         if self.sampler_mode == 'train':
             valid_countertops = [k for (k, v) in self.countertop_object_to_data_id.items() if len(v) > 1]
@@ -353,89 +361,10 @@ class PickupDropOffGeneralSampler(MidLevelArmTaskSampler):
 
         return object_to_data_id
 
-    # def generate_all_possible_sequences(self):
-    #     result = []
-    #     for (k, v) in self.countertop_object_to_data_id.items():
-    #         if len(v) <= 1:
-    #             continue
-    #         result += get_all_tuples_from_list(v)
-    #
-    #     return result
 
 class OnlyPickupGeneralSampler(PickupDropOffGeneralSampler):
     _TASK_TYPE = OnlyPickUpTask
 
-    # remove def next_task(self, force_advance_scene: bool = False) -> Optional[PickUpDropOffTask]:
-    #     if self.max_tasks is not None and self.max_tasks <= 0:
-    #         return None
-    #
-    #     if self.sampler_mode != 'train' and self.length <= 0:
-    #         return None
-    #
-    #
-    #     # source_data_point, target_data_point = self.get_source_target_indices()
-    #
-    #     scene = 'FloorPlan1_physics'
-    #
-    #     if self.env is None:
-    #         self.env = self._create_environment()
-    #
-    #     self.env.reset(scene_name=scene, agentMode="arm", agentControllerType="mid-level")
-    #
-    #     source_location = {'object_id': 'Tomato|-00.39|+01.14|-00.81', 'object_location': {'x': -0.8185595273971558, 'y': 1.0044000148773193, 'z': -2.2991013526916504}, 'scene_name': 'FloorPlan1_physics', 'countertop_id': 'CounterTop|-01.87|+00.95|-01.21', 'agent_pose': {'name': 'agent', 'position': {'x': -0.5, 'y': 0.900999128818512, 'z': -1.75}, 'rotation': {'x': -0.0, 'y': 270.0, 'z': 0.0}, 'cameraHorizon': 10.000000953674316, 'isStanding': True, 'inHighFrictionArea': False}, 'visibility': True}
-    #     target_location = {'position': {'x': 0.6847517490386963, 'y': 0.9388461112976074, 'z': -0.7700561881065369}, 'rotation': {'x': 0, 'y': 0, 'z': 0}}
-    #
-    #
-    #     task_info = {
-    #         'objectId': source_location['object_id'],
-    #         'countertop_id': source_location['countertop_id'],
-    #         "source_location": source_location,
-    #         'target_location': target_location,
-    #     }
-    #
-    #     this_controller = self.env
-    #
-    #     event = this_controller.step(dict(action = 'PlaceObjectAtPoint', objectId=source_location['object_id'], position=source_location['object_location']))
-    #     if event.metadata['lastActionSuccess'] == False:
-    #         print('oh no could not transport')
-    #     agent_state = source_location['agent_pose']
-    #
-    #
-    #     # for start arm from high up as a cheating, this block is very important. never remove
-    #     initial_pose = scene_start_cheating_init_pose[scene]
-    #     event1 = this_controller.step(dict(action='TeleportFull', x=initial_pose['x'], y=initial_pose['y'], z=initial_pose['z'], rotation=dict(x=0, y=initial_pose['rotation'], z=0), horizon=initial_pose['horizon']))
-    #     event2 = this_controller.step(dict(action='MoveMidLevelArm',  position=dict(x=0.0, y=0, z=0.35), **ADITIONAL_ARM_ARGS))
-    #     event3 = this_controller.step(dict(action='MoveMidLevelArmHeight', y=0.8, **ADITIONAL_ARM_ARGS))
-    #     if not(event1.metadata['lastActionSuccess'] and event2.metadata['lastActionSuccess'] and event3.metadata['lastActionSuccess']):
-    #         print('ARM MOVEMENT FAILED> SHOUD NEVER HAPPEN')
-    #         # print('scene', scene, initial_pose, ADITIONAL_ARM_ARGS)
-    #         # print(event1.metadata['actionReturn'] , event2.metadata['actionReturn'] , event3.metadata['actionReturn'])
-    #
-    #
-    #     event = this_controller.step(dict(action='TeleportFull', x=agent_state['position']['x'], y=agent_state['position']['y'], z=agent_state['position']['z'], rotation=dict(x=agent_state['rotation']['x'], y=agent_state['rotation']['y'], z=agent_state['rotation']['z']), horizon=agent_state['cameraHorizon']))
-    #     if event.metadata['lastActionSuccess'] == False:
-    #         print('oh no could not teleport')
-    #
-    #     should_visualize_goal_start = [x for x in self.visualizers if issubclass(type(x), ImageVisualizer)]
-    #     if len(should_visualize_goal_start) > 0:
-    #         task_info['visualization_source'] = {'object_id': 'Tomato|-00.39|+01.14|-00.81', 'object_location': {'x': -0.8185595273971558, 'y': 1.0044000148773193, 'z': -2.2991013526916504}, 'scene_name': 'FloorPlan1_physics', 'countertop_id': 'CounterTop|-01.87|+00.95|-01.21', 'agent_pose': {'name': 'agent', 'position': {'x': -0.5, 'y': 0.900999128818512, 'z': -1.75}, 'rotation': {'x': -0.0, 'y': 270.0, 'z': 0.0}, 'cameraHorizon': 10.000000953674316, 'isStanding': True, 'inHighFrictionArea': False}, 'visibility': True}
-    #         task_info['visualization_target'] =  {'object_id': 'Tomato|-00.39|+01.14|-00.81', 'object_location': {'x': 0.6847517490386963, 'y': 0.9388461112976074, 'z': -0.7700561881065369}, 'scene_name': 'FloorPlan1_physics', 'countertop_id': 'Stool|+00.70|+00.00|-00.51', 'agent_pose': {'name': 'agent', 'position': {'x': 1.25, 'y': 0.900999128818512, 'z': -0.75}, 'rotation': {'x': -0.0, 'y': 270.0, 'z': 0.0}, 'cameraHorizon': 10.000000953674316, 'isStanding': True, 'inHighFrictionArea': False}, 'visibility': True}
-    #
-    #
-    #     self._last_sampled_task = self._TASK_TYPE(
-    #         env=self.env,
-    #         sensors=self.sensors,
-    #         task_info=task_info,
-    #         max_steps=self.max_steps,
-    #         action_space=self._action_space,
-    #         visualizers=self.visualizers,
-    #         reward_configs=self.rewards_config,
-    #     )
-    #
-    #
-    #     # if task_info['objectId'] == 'Bread|-00.52|+01.17|-00.03' and task_info['countertop_id'] == 'CounterTop|-01.87|+00.95|-01.21':
-    #     #     ForkedPdb().set_trace()
-    #     return self._last_sampled_task
 
 class DepthPickDropGeneralSampler(PickupDropOffGeneralSampler):
 

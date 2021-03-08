@@ -308,8 +308,12 @@ class IThorMidLevelEnvironment(IThorEnvironment):
     def step(
             self, action_dict: Dict[str, Union[str, int, float]]
     ) -> ai2thor.server.Event:
+
+
         """Take a step in the ai2thor environment."""
         action = typing.cast(str, action_dict["action"])
+
+
 
         skip_render = "renderImage" in action_dict and not action_dict["renderImage"]
         last_frame: Optional[np.ndarray] = None
@@ -326,7 +330,7 @@ class IThorMidLevelEnvironment(IThorEnvironment):
 
         elif not 'MoveArm' in action:
             if 'Continuous' in action:
-                copy_aditions = copy.copy(ADITIONAL_ARM_ARGS)
+                copy_aditions = copy.deepcopy(ADITIONAL_ARM_ARGS)
                 copy_aditions['speed'] = copy_aditions['moveSpeed']
                 action_dict = {**action_dict, **copy_aditions}
                 if action in ['MoveAheadContinuous']:
@@ -343,6 +347,8 @@ class IThorMidLevelEnvironment(IThorEnvironment):
 
 
         elif 'MoveArm' in action:
+            copy_aditions = copy.deepcopy(ADITIONAL_ARM_ARGS)
+            action_dict = {**action_dict, **copy_aditions}
             base_position = self.get_current_arm_state()
             if 'MoveArmHeight' in action:
                 action_dict['action'] = 'MoveMidLevelArmHeight'
@@ -369,8 +375,8 @@ class IThorMidLevelEnvironment(IThorEnvironment):
                     base_position['z'] -= MOVE_ARM_CONSTANT
                 action_dict['position'] = {k:v for (k,v) in base_position.items() if k in ['x', 'y', 'z']}
 
-        if action_dict['action'] in ['MoveMidLevelArm', 'MoveMidLevelArmHeight', 'MoveContinuous', 'DropMidLevelHand', 'RotateContinuous']: #LATER_TODO pick up does not have it?
-            action_dict = {**action_dict, **ADITIONAL_ARM_ARGS}
+        # if action_dict['action'] in ['MoveMidLevelArm', 'MoveMidLevelArmHeight', 'MoveContinuous', 'DropMidLevelHand', 'RotateContinuous']: #LATER_TODO pick up does not have it?
+        #     action_dict = {**action_dict, **ADITIONAL_ARM_ARGS}
         #LATER_TODO should I manually set action success based on previous position? be careful to change last_event as well
 
         sr = self.controller.step(action_dict)
@@ -378,7 +384,10 @@ class IThorMidLevelEnvironment(IThorEnvironment):
 
         if self._verbose:
             # print('controller.step({})'.format(action_dict)) #
-            print('Step in env:', action, 'success', sr.metadata['lastActionSuccess'], sr.metadata['actionReturn'] if not sr.metadata['lastActionSuccess'] else '')
+            # print('Step in env:', action, 'success', sr.metadata['lastActionSuccess'], sr.metadata['actionReturn'] if not sr.metadata['lastActionSuccess'] else '')
+            print(self.controller.last_event)
+
+
 
         if self.restrict_to_initially_reachable_points:
             self._snap_agent_to_initially_reachable()

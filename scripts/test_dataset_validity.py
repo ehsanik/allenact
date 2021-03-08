@@ -1,3 +1,4 @@
+import argparse
 import pdb
 
 import ai2thor.controller
@@ -5,19 +6,16 @@ import ai2thor
 import json
 import sys, os
 
-from plugins.ithor_arm_plugin.ithor_arm_constants import reset_environment_and_additional_commands
-
 sys.path.append(os.path.abspath('.'))
+from plugins.ithor_arm_plugin.ithor_arm_constants import reset_environment_and_additional_commands, TRAIN_OBJECTS, TEST_OBJECTS, ENV_ARGS
 
 from plugins.ithor_arm_plugin.arm_calculation_utils import initialize_arm
 
 SCENES = ["FloorPlan{}_physics".format(str(i + 1)) for i in range(30)]
 
-OBJECTS = ['Apple', 'Bread', 'Tomato', 'Lettuce', 'Pot', 'Mug',
-           # 'Potato', 'SoapBottle', 'Pan', 'Egg', 'Spatula', 'Cup'
-           ]
+OBJECTS = TRAIN_OBJECTS # TODO for now + TEST_OBJECTS
 
-PRUNING = False
+PRUNING = True
 
 
 def test_initial_location(controller):
@@ -34,7 +32,7 @@ def check_datapoint_correctness(controller, source_location):
     event_place_obj = controller.step(dict(action = 'PlaceObjectAtPoint', objectId=source_location['object_id'], position=source_location['object_location']))
     _1, _2, _3 = initialize_arm(controller) #This is checked before
     agent_state = source_location['agent_pose']
-    event_TeleportFull = controller.step(dict(action='TeleportFull', x=agent_state['position']['x'], y=agent_state['position']['y'], z=agent_state['position']['z'], rotation=dict(x=agent_state['rotation']['x'], y=agent_state['rotation']['y'], z=agent_state['rotation']['z']), horizon=agent_state['cameraHorizon']))
+    event_TeleportFull = controller.step(dict(action='TeleportFull', standing=True, x=agent_state['position']['x'], y=agent_state['position']['y'], z=agent_state['position']['z'], rotation=dict(x=agent_state['rotation']['x'], y=agent_state['rotation']['y'], z=agent_state['rotation']['z']), horizon=agent_state['cameraHorizon']))
 
     object_id = source_location['object_id']
     object_state = [o for o in event_TeleportFull.metadata['objects'] if o['objectId'] == object_id][0]
@@ -83,8 +81,17 @@ def prune_data_points(controller):
             with open('datasets/ithor-armnav/pruned_valid_{}_positions_in_{}.json'.format(o, s), 'w') as f:
                 json.dump({s: remaining_valid}, f)
 
+def parse_args():
+    parser = argparse.ArgumentParser(description='Sync')
+    parser.add_argument('--prune', default=False, action='store_true')
+
+
+    args = parser.parse_args()
+    return args
+
 
 if __name__ == '__main__':
+    args = parse_args()
 
     controller = ai2thor.controller.Controller(
         **ENV_ARGS
@@ -103,9 +110,8 @@ if __name__ == '__main__':
     else:
         print('Failed', message)
 
-    if PRUNING:
+    if args.prune:
         print('Are you sure?')
-        pdb.set_trace()
         prune_data_points(controller)
     else:
 
