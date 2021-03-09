@@ -5,7 +5,7 @@ import numpy as np
 import imageio
 
 from plugins.ithor_arm_plugin.arm_calculation_utils import initialize_arm
-from plugins.ithor_arm_plugin.ithor_arm_constants import scene_start_cheating_init_pose, reset_environment_and_additional_commands
+from plugins.ithor_arm_plugin.ithor_arm_constants import scene_start_cheating_init_pose, reset_environment_and_additional_commands, transport_wrapper
 from plugins.ithor_arm_plugin.ithor_arm_constants import ADITIONAL_ARM_ARGS
 from utils.debugger_util import ForkedPdb
 import cv2
@@ -147,7 +147,7 @@ class ImageVisualizer(LoggerVisualizer):
         scene = this_controller.last_event.metadata['sceneName'] # maybe we need to reset env actually]
         reset_environment_and_additional_commands(this_controller, scene)
         # event = this_controller.step(dict(action = 'DropMidLevelHand'))
-        event = this_controller.step(dict(action = 'PlaceObjectAtPoint', objectId=object_id, position=object_location))
+        event = transport_wrapper(this_controller, object_id, object_location)
         if event.metadata['lastActionSuccess'] == False:
             print('oh no could not transport')
 

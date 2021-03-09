@@ -16,7 +16,7 @@ from core.base_abstractions.sensor import Sensor
 from core.base_abstractions.task import TaskSampler
 from utils.debugger_util import ForkedPdb
 from utils.experiment_utils import set_deterministic_cudnn, set_seed
-from plugins.ithor_arm_plugin.ithor_arm_constants import scene_start_cheating_init_pose, ADITIONAL_ARM_ARGS
+from plugins.ithor_arm_plugin.ithor_arm_constants import scene_start_cheating_init_pose, ADITIONAL_ARM_ARGS, transport_wrapper
 from utils.system import get_logger
 from plugins.ithor_arm_plugin.ithor_arm_viz import LoggerVisualizer, TestMetricLogger, ImageVisualizer
 
@@ -257,7 +257,7 @@ class PickupDropOffGeneralSampler(MidLevelArmTaskSampler):
 
         this_controller = self.env
 
-        event = this_controller.step(dict(action = 'PlaceObjectAtPoint', objectId=source_location['object_id'], position=source_location['object_location']))
+        event = transport_wrapper(this_controller, source_location['object_id'], source_location['object_location'])
         if event.metadata['lastActionSuccess'] == False:
             print('oh no could not transport')
         agent_state = source_location['agent_pose']
@@ -323,14 +323,13 @@ class PickupDropOffGeneralSampler(MidLevelArmTaskSampler):
 
 
     def get_source_target_indices(self):
-        # TODO remove
-        # source_location={'object_id': 'Apple|-00.47|+01.15|+00.48', 'object_location': {'x': -1.2908389568328857, 'y': 1.0044000148773193, 'z': -2.6678121089935303}, 'scene_name': 'FloorPlan1_physics', 'countertop_id': 'CounterTop|-01.87|+00.95|-01.21', 'agent_pose': {'name': 'agent', 'position': {'x': -0.5, 'y': 0.900999128818512, 'z': -1.75}, 'rotation': {'x': -0.0, 'y': 270.0, 'z': 0.0}, 'cameraHorizon': 10.000000953674316, 'isStanding': True, 'inHighFrictionArea': False}, 'visibility': True}
-        # target_location = {'object_id': 'Apple|-00.47|+01.15|+00.48', 'object_location': {'x': -0.2859378755092621, 'y': 1.1630845069885254, 'z': -0.8089651465415955}, 'scene_name': 'FloorPlan1_physics', 'countertop_id': 'CounterTop|-01.87|+00.95|-01.21', 'agent_pose': {'name': 'agent', 'position': {'x': -0.5, 'y': 0.900999128818512, 'z': -1.75}, 'rotation': {'x': -0.0, 'y': 270.0, 'z': 0.0}, 'cameraHorizon': 10.000000953674316, 'isStanding': True, 'inHighFrictionArea': False}, 'visibility': True}
-        # return source_location, target_location
+        #TODO remove
+        source_location={'object_id': 'Apple|-00.47|+01.15|+00.48', 'object_location': {'x': -1.2908389568328857, 'y': 1.0044000148773193, 'z': -2.6678121089935303}, 'scene_name': 'FloorPlan1_physics', 'countertop_id': 'CounterTop|-01.87|+00.95|-01.21', 'agent_pose': {'name': 'agent', 'position': {'x': -0.5, 'y': 0.900999128818512, 'z': -1.75}, 'rotation': {'x': -0.0, 'y': 270.0, 'z': 0.0}, 'cameraHorizon': 10.000000953674316, 'isStanding': True, 'inHighFrictionArea': False}, 'visibility': True}
+        target_location = {'object_id': 'Apple|-00.47|+01.15|+00.48', 'object_location': {'x': -0.2859378755092621, 'y': 1.1630845069885254, 'z': -0.8089651465415955}, 'scene_name': 'FloorPlan1_physics', 'countertop_id': 'CounterTop|-01.87|+00.95|-01.21', 'agent_pose': {'name': 'agent', 'position': {'x': -0.5, 'y': 0.900999128818512, 'z': -1.75}, 'rotation': {'x': -0.0, 'y': 270.0, 'z': 0.0}, 'cameraHorizon': 10.000000953674316, 'isStanding': True, 'inHighFrictionArea': False}, 'visibility': True}
+        return source_location, target_location
 
 
 
-        # TODO remove return ({'object_id': 'Bread|-00.52|+01.17|-00.03', 'object_location': {'x': -1.054699182510376, 'y': 1.0044000148773193, 'z': -2.5449085235595703}, 'scene_name': 'FloorPlan1_physics', 'countertop_id': 'CounterTop|-01.87|+00.95|-01.21', 'agent_pose': {'name': 'agent', 'position': {'x': -0.5, 'y': 0.900999128818512, 'z': -1.75}, 'rotation': {'x': -0.0, 'y': 270.0, 'z': 0.0}, 'cameraHorizon': 10.000000953674316, 'isStanding': True, 'inHighFrictionArea': False}, 'visibility': True}, {'object_id': 'Bread|-00.52|+01.17|-00.03', 'object_location': {'x': -0.3304286599159241,'y': 1.2070269584655762, 'z': 0.12633016705513}, 'scene_name': 'FloorPlan1_physics', 'countertop_id': 'CounterTop|-00.08|+01.15|00.00', 'agent_pose': {'name': 'agent', 'position': {'x': -1.25, 'y': 0.900999128818512, 'z': -1.25}, 'rotation': {'x': -0.0, 'y': 270.0, 'z': 0.0}, 'cameraHorizon': 10.000000953674316, 'isStanding': True, 'inHighFrictionArea': False}, 'visibility': True})
         if self.sampler_mode == 'train':
             valid_countertops = [k for (k, v) in self.countertop_object_to_data_id.items() if len(v) > 1]
             countertop_id = random.choice(valid_countertops)

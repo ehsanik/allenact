@@ -196,8 +196,11 @@ class PickUpDropOffTask(Task[IThorMidLevelEnvironment]):
 
         action_str = self.class_action_names()[action]
 
+        #TODO remove
+        self.manual_running = False
 
-        # TODO remove
+
+        # #TODO remove
         # action_sequence = ['MoveAheadContinuous', 'RotateRightContinuous', 'RotateLeftContinuous', 'RotateLeftContinuous', 'MoveAheadContinuous', 'MoveAheadContinuous', 'MoveArmXM', 'MoveArmXM', 'MoveArmXM', 'MoveArmXM', 'MoveArmXM', 'MoveArmXM', 'MoveArmXM', 'MoveArmXM', 'MoveArmZP', 'MoveArmZP', 'MoveArmZP', 'MoveArmZP', 'MoveArmZP', 'MoveArmZP', 'MoveArmZP', 'MoveArmZP', 'MoveArmZP', 'MoveArmZP', 'MoveArmZM', 'MoveArmHeightP', 'MoveArmHeightP', 'MoveArmHeightP', 'MoveArmHeightP', 'MoveArmHeightM', 'MoveArmHeightM', 'MoveArmHeightM', 'MoveArmHeightM', 'MoveArmHeightM', 'MoveArmHeightM', 'MoveArmHeightM', 'MoveArmHeightM', 'MoveArmXM', 'MoveArmXM', 'MoveArmZM', 'MoveArmZP', 'MoveArmXM', 'MoveArmXM', 'MoveArmHeightM', 'RotateRightContinuous', 'RotateRightContinuous', 'RotateRightContinuous', 'MoveAheadContinuous', 'RotateRightContinuous', 'MoveArmHeightP', 'MoveArmHeightP', 'MoveArmHeightP', 'MoveArmHeightP', 'MoveArmHeightP', 'MoveArmHeightP', 'RotateRightContinuous', 'MoveAheadContinuous', 'MoveAheadContinuous', 'MoveAheadContinuous', 'MoveArmXM', 'MoveArmXM', 'MoveArmXM', 'MoveArmZM', 'MoveArmZM', 'MoveArmZM', 'MoveArmZM', 'MoveArmZM', 'MoveArmHeightP', 'MoveArmHeightM', 'MoveArmHeightM', 'MoveArmHeightM', 'MoveArmHeightM', 'MoveArmHeightM', 'MoveArmZM', 'MoveArmZM', 'MoveArmZM', 'MoveArmZM', 'MoveArmHeightP', 'MoveArmHeightM', 'MoveArmHeightM', 'MoveArmHeightM']
         # try:
         #     action_str = action_sequence[self.action_index]
@@ -207,19 +210,19 @@ class PickUpDropOffTask(Task[IThorMidLevelEnvironment]):
         #     self.action_index = 1
 
 
-        # remove
-        # self.manual_running = False
-        # if self.manual_running: #manual running
-        #     self.env.controller.step('Pass')
-        #     action_translator = {
-        #         'u': MOVE_ARM_HEIGHT_P, 'j': MOVE_ARM_HEIGHT_M, 's': MOVE_ARM_X_P, 'a': MOVE_ARM_X_M, '4': MOVE_ARM_Y_P, '3': MOVE_ARM_Y_M, 'w': MOVE_ARM_Z_P, 'z': MOVE_ARM_Z_M, 'mm': MOVE_AHEAD, 'rr': ROTATE_RIGHT, 'll': ROTATE_LEFT
-        #     }
-        #     act='something'
-        #     #To see all details self.env.list_of_actions_so_far
-        #     while(act not in action_translator):
-        #         ForkedPdb().set_trace()
-        #     action_str = action_translator[act]
-        #     #We should set the action here
+        #TODO remove
+        # self.manual_running = True
+        if self.manual_running: #manual running
+            self.env.controller.step('Pass')
+            action_translator = {
+                'u': MOVE_ARM_HEIGHT_P, 'j': MOVE_ARM_HEIGHT_M, 's': MOVE_ARM_X_P, 'a': MOVE_ARM_X_M, '4': MOVE_ARM_Y_P, '3': MOVE_ARM_Y_M, 'w': MOVE_ARM_Z_P, 'z': MOVE_ARM_Z_M, 'mm': MOVE_AHEAD, 'rr': ROTATE_RIGHT, 'll': ROTATE_LEFT
+            }
+            act='something'
+            #To see all details self.env.list_of_actions_so_far
+            while(act not in action_translator):
+                ForkedPdb().set_trace()
+            action_str = action_translator[act]
+            #We should set the action here
 
         self._last_action_str = action_str
         self.env.step({"action": action_str})
@@ -332,8 +335,8 @@ class PickUpDropOffTask(Task[IThorMidLevelEnvironment]):
         reward += delta_obj_to_goal_distance_reward
 
         # remove
-        # if self.manual_running:
-        #     print('delta obj2arm', delta_arm_to_obj_distance_reward, 'delta obj2goal', delta_obj_to_goal_distance_reward, 'reward', reward)
+        if self.manual_running:
+            print('delta obj2arm', delta_arm_to_obj_distance_reward, 'delta obj2goal', delta_obj_to_goal_distance_reward, 'reward', reward)
 
         # distance * 0.1 does not make sense because then it will not take any actions
 
