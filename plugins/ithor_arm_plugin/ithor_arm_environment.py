@@ -266,7 +266,7 @@ class IThorMidLevelEnvironment(IThorEnvironment):
         joints=(event.metadata['arm']['joints'])
         arm=joints[-1]
         assert arm['name'] == 'robot_arm_4_jnt'
-        xyz_dict = arm['rootRelativePosition']
+        xyz_dict = copy.deepcopy(arm['rootRelativePosition'])
         height_arm = joints[0]['position']['y']
         xyz_dict['h'] = (height_arm - h_min) / (h_max - h_min)
         xyz_dict = self.correct_nan_inf(xyz_dict, 'realtive hand')

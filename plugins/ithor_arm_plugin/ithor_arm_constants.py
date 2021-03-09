@@ -9,7 +9,9 @@ import ai2thor.fifo_server
 # ARM_BUILD_NUMBER = '51aacd8a06e44412afe6ce9e046f05a481e16939'
 # ARM_BUILD_NUMBER = '2a98a22cfd2e59b2dbdd7bfa036f191afd305fad'
 # ARM_BUILD_NUMBER = '12a36839a9670e70ffe6f2171212147ce306d818'
-ARM_BUILD_NUMBER = 'a1d3d6ad89b7ec06b3a406f391e847222dde5a37'
+# ARM_BUILD_NUMBER = 'a1d3d6ad89b7ec06b3a406f391e847222dde5a37'
+# ARM_BUILD_NUMBER = '52f8df9cc9fc23dc8a4387fb29d7fd2cbdb22d53'
+ARM_BUILD_NUMBER = '6da9163ea2b6766a632d27bc14ebacee7b9cf9fa'
 
 ARM_MIN_HEIGHT = 0.450998873
 ARM_MAX_HEIGHT = 1.8009994
@@ -52,13 +54,22 @@ def make_all_objects_unbreakable(controller):
 def reset_environment_and_additional_commands(controller, scene_name):
     controller.reset(scene_name)
     controller.step('PausePhysicsAutoSim', autoSyncTransforms=False)
-    # controller.step('PausePhysicsAutoSim')
     controller.step(action='MakeAllObjectsMoveable')
     make_all_objects_unbreakable(controller)
     return
 
 # Apple, Bread, Tomato, Lettuce, Pot, Mug,Potato, SoapBottle, Pan, Egg, Spatula, Cup
 
+def transport_wrapper(controller, target_object, target_location):
+    action_detail_list = []
+    transport_detail = dict(action = 'PlaceObjectAtPoint', objectId=target_object, position=target_location, forceKinematic=True)
+    event = controller.step(**transport_detail)
+    action_detail_list.append(transport_detail)
+    # controller.step('PhysicsSyncTransforms')
+    advance_detail = dict(action='AdvancePhysicsStep', simSeconds=1.0)
+    controller.step(**advance_detail)
+    action_detail_list.append(advance_detail)
+    return event
 
 
 VALID_OBJECT_LIST = ['Knife', 'Bread', 'Fork', 'Potato', 'SoapBottle', 'Pan', 'Plate', 'Tomato', 'Egg', 'Pot', 'Spatula', 'Cup', 'Bowl', 'SaltShaker', 'PepperShaker', 'Lettuce', 'ButterKnife', 'Apple', 'DishSponge', 'Spoon', 'Mug']
