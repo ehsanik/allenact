@@ -71,7 +71,7 @@ class MidLevelArmTaskSampler(TaskSampler):
         if deterministic_cudnn:
             set_deterministic_cudnn()
 
-        self.reset()
+        self.reset()#TODO this one
         self.visualizers = visualizers
         self.sampler_mode = kwargs['sampler_mode']
         self.cap_training = kwargs['cap_training']
@@ -200,7 +200,7 @@ class PickupDropOffGeneralSampler(MidLevelArmTaskSampler):
             self.deterministic_data_list = []
             for scene in self.scenes:
                 for object in self.objects:
-                    valid_position_adr = 'datasets/ithor-armnav/w_nav_tasks_{}_positions_in_{}.json'.format(object, scene)
+                    valid_position_adr = 'datasets/ithor-armnav/pruned_w_nav_tasks_{}_positions_in_{}.json'.format(object, scene) #TODO we need to change this for pickup drop same counter
                     try:
                         with open(valid_position_adr) as f:
                             data_points = json.load(f)
@@ -323,13 +323,6 @@ class PickupDropOffGeneralSampler(MidLevelArmTaskSampler):
 
 
     def get_source_target_indices(self):
-        #TODO remove
-        source_location={'object_id': 'Apple|-00.47|+01.15|+00.48', 'object_location': {'x': -1.2908389568328857, 'y': 1.0044000148773193, 'z': -2.6678121089935303}, 'scene_name': 'FloorPlan1_physics', 'countertop_id': 'CounterTop|-01.87|+00.95|-01.21', 'agent_pose': {'name': 'agent', 'position': {'x': -0.5, 'y': 0.900999128818512, 'z': -1.75}, 'rotation': {'x': -0.0, 'y': 270.0, 'z': 0.0}, 'cameraHorizon': 10.000000953674316, 'isStanding': True, 'inHighFrictionArea': False}, 'visibility': True}
-        target_location = {'object_id': 'Apple|-00.47|+01.15|+00.48', 'object_location': {'x': -0.2859378755092621, 'y': 1.1630845069885254, 'z': -0.8089651465415955}, 'scene_name': 'FloorPlan1_physics', 'countertop_id': 'CounterTop|-01.87|+00.95|-01.21', 'agent_pose': {'name': 'agent', 'position': {'x': -0.5, 'y': 0.900999128818512, 'z': -1.75}, 'rotation': {'x': -0.0, 'y': 270.0, 'z': 0.0}, 'cameraHorizon': 10.000000953674316, 'isStanding': True, 'inHighFrictionArea': False}, 'visibility': True}
-        return source_location, target_location
-
-
-
         if self.sampler_mode == 'train':
             valid_countertops = [k for (k, v) in self.countertop_object_to_data_id.items() if len(v) > 1]
             countertop_id = random.choice(valid_countertops)
@@ -339,7 +332,6 @@ class PickupDropOffGeneralSampler(MidLevelArmTaskSampler):
             result = self.deterministic_data_list[self.sampler_index]
             # ForkedPdb().set_trace()
             self.sampler_index += 1
-            # self.max_tasks -= 1
 
         return result
 
@@ -364,6 +356,40 @@ class PickupDropOffGeneralSampler(MidLevelArmTaskSampler):
 class OnlyPickupGeneralSampler(PickupDropOffGeneralSampler):
     _TASK_TYPE = OnlyPickUpTask
 
+class SameCounterGeneralSampler(PickupDropOffGeneralSampler):
+    def get_source_target_indices(self):
+        if self.sampler_mode == 'train':
+            valid_countertops = [k for (k, v) in self.countertop_object_to_data_id.items() if len(v) > 2]
+            countertop_id = random.choice(valid_countertops)
+            indices = random.sample(self.countertop_object_to_data_id[countertop_id], 2)
+            result = self.all_possible_points[indices[0]],self.all_possible_points[indices[1]]
+
+        else:
+            result = self.deterministic_data_list[self.sampler_index] #TODO this is obciously wrong for same counter
+            # ForkedPdb().set_trace()
+            self.sampler_index += 1
+            # self.max_tasks -= 1
+        assert result[0]['countertop_id'] == result[1]['countertop_id'] and result[0]['object_location'] != result[1]['object_location']
+        return result
+
+    def calc_possible_trajectories(self, all_possible_points):
+
+        countertop_object_to_data_id = {}
+
+        for i in range(len(all_possible_points)):
+            countertop_id = all_possible_points[i]['countertop_id']
+            object_id = all_possible_points[i]['object_id']
+            counter_object = '{}_{}'.format(countertop_id, object_id)
+            countertop_object_to_data_id.setdefault(counter_object, [])
+            countertop_object_to_data_id[counter_object].append(i)
+            #
+            # object_to_data_id.setdefault(object_id, [])
+            # object_to_data_id[object_id].append(i)
+
+        return countertop_object_to_data_id
+
+
+
 
 class DepthPickDropGeneralSampler(PickupDropOffGeneralSampler):
 
@@ -379,50 +405,50 @@ class DepthPickDropGeneralSampler(PickupDropOffGeneralSampler):
 
 
 
-class PickupDropOffGeneralSamplerDeterministic(PickupDropOffGeneralSampler): #LATER_TODO all the few shots should be with this one
-
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
-
-        if True: # Be aware that this totally overrides some stuff
-            self.deterministic_data_list = []
-            for scene in self.scenes:
-                for object in self.objects:
-                    valid_position_adr = 'datasets/ithor-armnav/w_nav_tasks_{}_positions_in_{}.json'.format(object, scene)
-                    try:
-                        with open(valid_position_adr) as f:
-                            data_points = json.load(f)
-                    except Exception:
-                        print('Failed to load', valid_position_adr)
-                        continue
-                    visible_data = [data for data in data_points[scene]]
-                    self.deterministic_data_list += visible_data
-
-                    # [v[0]['countertop_id'] for v in visible_data]
-            random.shuffle(self.deterministic_data_list)
-            self.sampler_index = 0
-            self.epoch = 0
-        if self.sampler_mode == 'test':
-            # very patched up
-            self.max_tasks = self.reset_tasks = len(self.deterministic_data_list)
-
-
-    def get_source_target_indices(self):
-        if self.sampler_mode == 'train':
-            if self.sampler_index >= len(self.deterministic_data_list):
-                random.shuffle(self.deterministic_data_list)
-                self.epoch += 1
-                print('Just finished epoch ', self.epoch)
-            self.sampler_index %= len(self.deterministic_data_list)
-            # valid_countertops = [k for (k, v) in self.countertop_object_to_data_id.items() if len(v) > 1]
-            # countertop_id = random.choice(valid_countertops)
-            # result = random.sample(self.countertop_object_to_data_id[countertop_id], 2)
-
-        result = self.deterministic_data_list[self.sampler_index]
-        self.sampler_index += 1
-        # self.max_tasks -= 1
-
-        return result
+# class PickupDropOffGeneralSamplerDeterministic(PickupDropOffGeneralSampler): #LATER_TODO all the few shots should be with this one
+#
+#     def __init__(self, **kwargs):
+#         super().__init__(**kwargs)
+#
+#         if True: # Be aware that this totally overrides some stuff
+#             self.deterministic_data_list = []
+#             for scene in self.scenes:
+#                 for object in self.objects:
+#                     valid_position_adr = 'datasets/ithor-armnav/w_nav_tasks_{}_positions_in_{}.json'.format(object, scene)
+#                     try:
+#                         with open(valid_position_adr) as f:
+#                             data_points = json.load(f)
+#                     except Exception:
+#                         print('Failed to load', valid_position_adr)
+#                         continue
+#                     visible_data = [data for data in data_points[scene]]
+#                     self.deterministic_data_list += visible_data
+#
+#                     # [v[0]['countertop_id'] for v in visible_data]
+#             random.shuffle(self.deterministic_data_list)
+#             self.sampler_index = 0
+#             self.epoch = 0
+#         if self.sampler_mode == 'test':
+#             # very patched up
+#             self.max_tasks = self.reset_tasks = len(self.deterministic_data_list)
+#
+#
+#     def get_source_target_indices(self):
+#         if self.sampler_mode == 'train':
+#             if self.sampler_index >= len(self.deterministic_data_list):
+#                 random.shuffle(self.deterministic_data_list)
+#                 self.epoch += 1
+#                 print('Just finished epoch ', self.epoch)
+#             self.sampler_index %= len(self.deterministic_data_list)
+#             # valid_countertops = [k for (k, v) in self.countertop_object_to_data_id.items() if len(v) > 1]
+#             # countertop_id = random.choice(valid_countertops)
+#             # result = random.sample(self.countertop_object_to_data_id[countertop_id], 2)
+#
+#         result = self.deterministic_data_list[self.sampler_index]
+#         self.sampler_index += 1
+#         # self.max_tasks -= 1
+#
+#         return result
 
 
 

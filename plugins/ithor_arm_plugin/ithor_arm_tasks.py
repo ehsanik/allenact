@@ -200,8 +200,7 @@ class PickUpDropOffTask(Task[IThorMidLevelEnvironment]):
         self.manual_running = False
 
 
-        # #TODO remove
-        # action_sequence = ['MoveAheadContinuous', 'RotateRightContinuous', 'RotateLeftContinuous', 'RotateLeftContinuous', 'MoveAheadContinuous', 'MoveAheadContinuous', 'MoveArmXM', 'MoveArmXM', 'MoveArmXM', 'MoveArmXM', 'MoveArmXM', 'MoveArmXM', 'MoveArmXM', 'MoveArmXM', 'MoveArmZP', 'MoveArmZP', 'MoveArmZP', 'MoveArmZP', 'MoveArmZP', 'MoveArmZP', 'MoveArmZP', 'MoveArmZP', 'MoveArmZP', 'MoveArmZP', 'MoveArmZM', 'MoveArmHeightP', 'MoveArmHeightP', 'MoveArmHeightP', 'MoveArmHeightP', 'MoveArmHeightM', 'MoveArmHeightM', 'MoveArmHeightM', 'MoveArmHeightM', 'MoveArmHeightM', 'MoveArmHeightM', 'MoveArmHeightM', 'MoveArmHeightM', 'MoveArmXM', 'MoveArmXM', 'MoveArmZM', 'MoveArmZP', 'MoveArmXM', 'MoveArmXM', 'MoveArmHeightM', 'RotateRightContinuous', 'RotateRightContinuous', 'RotateRightContinuous', 'MoveAheadContinuous', 'RotateRightContinuous', 'MoveArmHeightP', 'MoveArmHeightP', 'MoveArmHeightP', 'MoveArmHeightP', 'MoveArmHeightP', 'MoveArmHeightP', 'RotateRightContinuous', 'MoveAheadContinuous', 'MoveAheadContinuous', 'MoveAheadContinuous', 'MoveArmXM', 'MoveArmXM', 'MoveArmXM', 'MoveArmZM', 'MoveArmZM', 'MoveArmZM', 'MoveArmZM', 'MoveArmZM', 'MoveArmHeightP', 'MoveArmHeightM', 'MoveArmHeightM', 'MoveArmHeightM', 'MoveArmHeightM', 'MoveArmHeightM', 'MoveArmZM', 'MoveArmZM', 'MoveArmZM', 'MoveArmZM', 'MoveArmHeightP', 'MoveArmHeightM', 'MoveArmHeightM', 'MoveArmHeightM']
+        # TODO remove action_sequence = ['MoveAheadContinuous', 'RotateRightContinuous', 'RotateLeftContinuous', 'RotateLeftContinuous', 'MoveAheadContinuous', 'MoveAheadContinuous', 'MoveArmXM', 'MoveArmXM', 'MoveArmXM', 'MoveArmXM', 'MoveArmXM', 'MoveArmXM', 'MoveArmXM', 'MoveArmXM', 'MoveArmZP', 'MoveArmZP', 'MoveArmZP', 'MoveArmZP', 'MoveArmZP', 'MoveArmZP', 'MoveArmZP', 'MoveArmZP', 'MoveArmZP', 'MoveArmZP', 'MoveArmZM', 'MoveArmHeightP', 'MoveArmHeightP', 'MoveArmHeightP', 'MoveArmHeightP', 'MoveArmHeightM', 'MoveArmHeightM', 'MoveArmHeightM', 'MoveArmHeightM', 'MoveArmHeightM', 'MoveArmHeightM', 'MoveArmHeightM', 'MoveArmHeightM', 'MoveArmXM', 'MoveArmXM', 'MoveArmZM', 'MoveArmZP', 'MoveArmXM', 'MoveArmXM', 'MoveArmHeightM', 'RotateRightContinuous', 'RotateRightContinuous', 'RotateRightContinuous', 'MoveAheadContinuous', 'RotateRightContinuous', 'MoveArmHeightP', 'MoveArmHeightP', 'MoveArmHeightP', 'MoveArmHeightP', 'MoveArmHeightP', 'MoveArmHeightP', 'RotateRightContinuous', 'MoveAheadContinuous', 'MoveAheadContinuous', 'MoveAheadContinuous', 'MoveArmXM', 'MoveArmXM', 'MoveArmXM', 'MoveArmZM', 'MoveArmZM', 'MoveArmZM', 'MoveArmZM', 'MoveArmZM', 'MoveArmHeightP', 'MoveArmHeightM', 'MoveArmHeightM', 'MoveArmHeightM', 'MoveArmHeightM', 'MoveArmHeightM', 'MoveArmZM', 'MoveArmZM', 'MoveArmZM', 'MoveArmZM', 'MoveArmHeightP', 'MoveArmHeightM', 'MoveArmHeightM', 'MoveArmHeightM']
         # try:
         #     action_str = action_sequence[self.action_index]
         #     self.action_index += 1
@@ -210,7 +209,7 @@ class PickUpDropOffTask(Task[IThorMidLevelEnvironment]):
         #     self.action_index = 1
 
 
-        #TODO remove
+        # remove
         # self.manual_running = True
         if self.manual_running: #manual running
             self.env.controller.step('Pass')

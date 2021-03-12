@@ -9,13 +9,12 @@ import sys, os
 sys.path.append(os.path.abspath('.'))
 from plugins.ithor_arm_plugin.ithor_arm_constants import reset_environment_and_additional_commands, TRAIN_OBJECTS, TEST_OBJECTS, ENV_ARGS, transport_wrapper
 
-from plugins.ithor_arm_plugin.arm_calculation_utils import initialize_arm
+from plugins.ithor_arm_plugin.arm_calculation_utils import initialize_arm, is_object_in_receptacle, is_agent_at_position
 
 SCENES = ["FloorPlan{}_physics".format(str(i + 1)) for i in range(30)]
 
-OBJECTS = TRAIN_OBJECTS # TODO for now + TEST_OBJECTS
-
-PRUNING = True
+# OBJECTS = TRAIN_OBJECTS #
+OBJECTS = TEST_OBJECTS
 
 
 def test_initial_location(controller):
@@ -32,33 +31,58 @@ def check_datapoint_correctness(controller, source_location):
     event_place_obj = transport_wrapper(controller, source_location['object_id'], source_location['object_location'])
     _1, _2, _3 = initialize_arm(controller) #This is checked before
     agent_state = source_location['agent_pose']
-    event_TeleportFull = controller.step(dict(action='TeleportFull', standing=True, x=agent_state['position']['x'], y=agent_state['position']['y'], z=agent_state['position']['z'], rotation=dict(x=agent_state['rotation']['x'], y=agent_state['rotation']['y'], z=agent_state['rotation']['z']), horizon=agent_state['cameraHorizon']))
+    teleport_detail = dict(action='TeleportFull', standing=True, x=agent_state['position']['x'], y=agent_state['position']['y'], z=agent_state['position']['z'], rotation=dict(x=agent_state['rotation']['x'], y=agent_state['rotation']['y'], z=agent_state['rotation']['z']), horizon=agent_state['cameraHorizon'])
+    event_TeleportFull = controller.step(teleport_detail)
 
     object_id = source_location['object_id']
     object_state = [o for o in event_TeleportFull.metadata['objects'] if o['objectId'] == object_id][0]
     object_is_visible = object_state['visible']
+    object_correct_location = is_object_in_receptacle(controller.last_event,object_id,source_location['countertop_id'])
+    agent_correct_location = is_agent_at_position(controller, teleport_detail)
     # check to transport object
 
     # check to do arm init
     # check to transport agent
     # check object is visible
-    if event_place_obj.metadata['lastActionSuccess'] and event_TeleportFull.metadata['lastActionSuccess'] and object_is_visible:
+    if event_place_obj.metadata['lastActionSuccess'] and event_TeleportFull.metadata['lastActionSuccess'] and object_is_visible and object_correct_location and agent_correct_location:
         return True, ''
     else:
-        return False, 'Data point invalid for {}, because of event_place_obj {}, event_TeleportFull{}, object_is_visible {}'.format(source_location, event_place_obj, event_TeleportFull, object_is_visible)
+        error_reasons = []
+        if not event_place_obj.metadata['lastActionSuccess']:
+            error_reasons.append('transport')
+        if not event_TeleportFull.metadata['lastActionSuccess']:
+            error_reasons.append('teleport')
+        if not object_is_visible:
+            error_reasons.append('visible')
+        if not object_correct_location:
+            error_reasons.append('object_correct_location')
+        if not agent_correct_location:
+            error_reasons.append('agent_correct_location')
+        return False, error_reasons
+        # return False, 'Data point invalid for {}, because of event_place_obj {}, event_TeleportFull{}, object_is_visible {}'.format(source_location, event_place_obj, event_TeleportFull, object_is_visible)
 
 def test_train_data_points(controller):
+    total_checked = 0
+    total_error = 0
+    total_reasons = {}
     for s in SCENES:
         for o in OBJECTS:
             print('Testing ', s, o)
 
-            with open('datasets/ithor-armnav/pruned_valid_{}_positions_in_{}.json'.format(o, s)) as f:
+            with open('datasets/ithor-armnav/valid_{}_positions_in_{}.json'.format(o, s)) as f:
                 data_points = json.load(f)
             visible_data = [data for data in data_points[s] if data['visibility']]
             for datapoint in visible_data:
                 result, message = check_datapoint_correctness(controller, datapoint)
+                total_checked += 1
                 if not result:
-                    return False, message
+                    total_error += 1
+                    for reason in message:
+
+                        total_reasons.setdefault(reason, 0)
+                        total_reasons[reason] += 1
+                    # return False, message
+                    print('total checked', total_checked, 'total error', total_error, 'reasons', total_reasons)
 
     return True, ''
 

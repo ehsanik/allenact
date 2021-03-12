@@ -126,3 +126,46 @@ def initialize_arm(controller):
     event2 = controller.step(dict(action='MoveMidLevelArm',  position=dict(x=0.0, y=0, z=0.35), **ADITIONAL_ARM_ARGS))
     event3 = controller.step(dict(action='MoveMidLevelArmHeight', y=0.8, **ADITIONAL_ARM_ARGS))
     return event1, event2, event3
+
+def is_agent_at_position(controller, action_detail):
+    # dict(action='TeleportFull', x=initial_location['x'], y=initial_location['y'], z=initial_location['z'], rotation=dict(x=0, y=initial_rotation, z=0), horizon=horizon, standing=True)
+    target_pose = dict(
+        position={'x': action_detail['x'], 'y': action_detail['y'], 'z': action_detail['z'], },
+        rotation=action_detail['rotation'],
+        horizon=action_detail['horizon']
+    )
+    current_agent_pose = controller.last_event.metadata['agent']
+    current_agent_pose = dict(
+        position=current_agent_pose['position'],
+        rotation=current_agent_pose['rotation'],
+        horizon=current_agent_pose['cameraHorizon'],
+    )
+    for k in target_pose['position'].keys():
+        if abs(target_pose['position'][k] - current_agent_pose['position'][k]) > 0.001:
+            return False
+    for k in target_pose['rotation'].keys():
+        target_val = target_pose['rotation'][k]
+        current_val = current_agent_pose['rotation'][k]
+        target_val = round(target_val) % 360
+        current_val = round(current_val) % 360
+        if abs(target_val - current_val) > 0.001:
+            return False
+    if abs(target_pose['horizon'] - current_agent_pose['horizon']) > 0.001:
+        return False
+    return True
+
+def is_object_in_receptacle(event,target_obj,target_receptacle):
+    all_containing_receptacle = set([])
+    parent_queue = [target_obj]
+    while(len(parent_queue) > 0):
+        top_queue = parent_queue[0]
+        parent_queue = parent_queue[1:]
+        if top_queue in all_containing_receptacle:
+            continue
+        current_parent_list = event.get_object(top_queue)['parentReceptacles']
+        if current_parent_list is None:
+            continue
+        else:
+            parent_queue += current_parent_list
+            all_containing_receptacle.update(set(current_parent_list))
+    return target_receptacle in all_containing_receptacle

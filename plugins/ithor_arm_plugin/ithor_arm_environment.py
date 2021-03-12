@@ -20,7 +20,7 @@ from plugins.ithor_plugin.ithor_environment import IThorEnvironment
 from plugins.ithor_plugin.ithor_util import round_to_factor
 from plugins.ithor_plugin.ithor_constants import VISIBILITY_DISTANCE, FOV
 from utils.debugger_util import ForkedPdb
-from plugins.ithor_arm_plugin.ithor_arm_constants import ADITIONAL_ARM_ARGS, ARM_MIN_HEIGHT, ARM_MAX_HEIGHT, MOVE_ARM_HEIGHT_CONSTANT, MOVE_ARM_CONSTANT, ARM_BUILD_NUMBER, reset_environment_and_additional_commands
+from plugins.ithor_arm_plugin.ithor_arm_constants import ADITIONAL_ARM_ARGS, ARM_MIN_HEIGHT, ARM_MAX_HEIGHT, MOVE_ARM_HEIGHT_CONSTANT, MOVE_ARM_CONSTANT, ARM_BUILD_NUMBER, reset_environment_and_additional_commands, ENV_ARGS
 
 
 class IThorMidLevelEnvironment(IThorEnvironment):
@@ -161,15 +161,25 @@ class IThorMidLevelEnvironment(IThorEnvironment):
 
         self._started = True
         self.reset(scene_name=scene_name, move_mag=move_mag, **kwargs)
-    def reset_init_params(self, **kwargs):
-        self.controller.initialization_parameters.update({
-            "gridSize": self._grid_size,
-            "visibilityDistance": self._visibility_distance,
-            "fov": self._fov,
-            "makeAgentsVisible": self.make_agents_visible,
-            "alwaysReturnVisibleRange": self._always_return_visible_range,
-            **kwargs,
-        })
+    def reset_init_params(self):#, **kwargs):#TODO there is discrepency here. how about when we change these?
+        self.controller.initialization_parameters.update(
+            # "gridSize": self._grid_size,
+            # "visibilityDistance": self._visibility_distance,
+            # "fov": self._fov,
+            # "makeAgentsVisible": self.make_agents_visible,
+            # "alwaysReturnVisibleRange": self._always_return_visible_range,
+            # **kwargs,
+            #TODO SERIOUSLY?
+            dict(gridSize=0.25,
+            width=224, height=224,
+            visibilityDistance=1.0,
+            agentMode='arm', fieldOfView=100,
+            agentControllerType='mid-level',
+            # server_class=ai2thor.fifo_server.FifoServer,
+            useMassThreshold = True, massThreshold = 10,
+            autoSimulation=False, autoSyncTransforms=True)
+
+        )
     def reset(
         self, scene_name: Optional[str], move_mag: float = 0.25, **kwargs,
     ):
@@ -178,8 +188,8 @@ class IThorMidLevelEnvironment(IThorEnvironment):
 
         if scene_name is None:
             scene_name = self.controller.last_event.metadata["sceneName"]
+        # self.reset_init_params()#**kwargs) #TODO does removing this fixes the problem?
 
-        self.reset_init_params(**kwargs)
         reset_environment_and_additional_commands(self.controller, scene_name)
 
         if self.object_open_speed != 1.0:

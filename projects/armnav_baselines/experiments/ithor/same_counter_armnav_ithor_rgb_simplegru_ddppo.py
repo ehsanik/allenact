@@ -1,5 +1,5 @@
 from plugins.ithor_arm_plugin.ithor_arm_sensors import RelativeAgentArmToObjectSensor, RelativeObjectToGoalSensor, PickedUpObjSensor
-from plugins.ithor_arm_plugin.ithor_arm_task_samplers import OnlyPickupGeneralSampler
+from plugins.ithor_arm_plugin.ithor_arm_task_samplers import SameCounterGeneralSampler
 from plugins.ithor_plugin.ithor_sensors import RGBSensorThor
 
 from projects.armnav_baselines.experiments.ithor.armnav_ithor_base import (
@@ -31,8 +31,8 @@ class PickUpOnlyArmNaviThorRGBPPOExperimentConfig(
         RelativeObjectToGoalSensor(),
         PickedUpObjSensor(),
     ]
-    TASK_SAMPLER = OnlyPickupGeneralSampler
-    MAX_STEPS = 120
+    TASK_SAMPLER = SameCounterGeneralSampler
+    MAX_STEPS = 200
     NUM_PROCESSES = 40
 
     @classmethod
