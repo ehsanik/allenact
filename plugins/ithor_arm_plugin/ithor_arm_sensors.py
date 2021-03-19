@@ -132,7 +132,7 @@ class RelativeObjectToGoalSensor(Sensor):
         return result
 
 
-class RelativeAgentArmToObjectSensor(Sensor):#TODO double check this to see if it makes sense
+class RelativeAgentArmToObjectSensor(Sensor):# TODO double check this to see if it makes sense
     def __init__(
             self,
             uuid: str = "relative_agent_arm_to_obj",

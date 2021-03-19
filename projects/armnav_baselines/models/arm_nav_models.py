@@ -64,8 +64,15 @@ class ArmNavBaselineActorCritic(ActorCriticModel[CategoricalDistr]):
         sensor_names = self.observation_space.spaces.keys()
         self.visual_encoder = SimpleCNN(self.observation_space, self._hidden_size, rgb_uuid='rgb_lowres' if 'rgb_lowres' in sensor_names else None, depth_uuid='depth_lowres' if 'depth_lowres' in sensor_names else None)
 
+        if 'rgb_lowres' in sensor_names and 'depth_lowres' in sensor_names:
+            input_visual_feature_num = 2
+        elif 'rgb_lowres' in sensor_names:
+            input_visual_feature_num = 1
+        elif 'depth_lowres' in sensor_names:
+            input_visual_feature_num = 1
+
         self.state_encoder = RNNStateEncoder(
-            (self._hidden_size) + obj_state_embedding_size,
+            (self._hidden_size) * input_visual_feature_num + obj_state_embedding_size,
             self._hidden_size,
             trainable_masked_hidden_state=trainable_masked_hidden_state,
             num_layers=num_rnn_layers,
@@ -139,6 +146,7 @@ class ArmNavBaselineActorCritic(ActorCriticModel[CategoricalDistr]):
         Tuple of the `ActorCriticOutput` and recurrent hidden state.
         """
 
+
         arm2obj_dist = self.get_relative_distance_embedding(observations['relative_agent_arm_to_obj'])
         obj2goal_dist = self.get_relative_distance_embedding(observations['relative_obj_to_goal'])
         #LATER_TODO maybe relative arm to agent location would help too?
@@ -154,7 +162,7 @@ class ArmNavBaselineActorCritic(ActorCriticModel[CategoricalDistr]):
 
         x = [distances, perception_embed]
 
-        x_cat = torch.cat(x, dim=1)  # type: ignore
+        x_cat = torch.cat(x, dim=-1)
         x_out, rnn_hidden_states = self.state_encoder(x_cat, memory.tensor("rnn"), masks)
 
         actor_out = self.actor(x_out)

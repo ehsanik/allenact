@@ -16,7 +16,7 @@ from core.algorithms.onpolicy_sync.policy import (
     LinearActorHead,
     DistributionType,
     Memory,
-    ObservationType,
+    ObservationType, LinearActorHeadNoCategory,
 )
 from core.base_abstractions.distributions import CategoricalDistr
 from core.base_abstractions.misc import ActorCriticOutput
@@ -61,19 +61,20 @@ class DisjointArmNavBaselineActorCritic(ActorCriticModel[CategoricalDistr]):
         self._hidden_size = hidden_size
         self.object_type_embedding_size = obj_state_embedding_size
 
-        self.visual_encoder = SimpleCNN(self.observation_space, self._hidden_size, rgb_uuid='rgb_lowres', depth_uuid=None)
+        self.visual_encoder_pick = SimpleCNN(self.observation_space, self._hidden_size, rgb_uuid='rgb_lowres', depth_uuid=None)
+        self.visual_encoder_drop = SimpleCNN(self.observation_space, self._hidden_size, rgb_uuid='rgb_lowres', depth_uuid=None)
 
         self.state_encoder = RNNStateEncoder(
-            (self._hidden_size) + obj_state_embedding_size + obj_state_embedding_size,
+            (self._hidden_size) + obj_state_embedding_size,
             self._hidden_size,
             trainable_masked_hidden_state=trainable_masked_hidden_state,
             num_layers=num_rnn_layers,
             rnn_type=rnn_type,
             )
 
-        self.actor_pick = LinearActorHead(self._hidden_size, action_space.n)
+        self.actor_pick = LinearActorHeadNoCategory(self._hidden_size, action_space.n)
         self.critic_pick = LinearCriticHead(self._hidden_size)
-        self.actor_drop = LinearActorHead(self._hidden_size, action_space.n)
+        self.actor_drop = LinearActorHeadNoCategory(self._hidden_size, action_space.n)
         self.critic_drop = LinearCriticHead(self._hidden_size)
 
         # self.object_state_embedding = nn.Embedding(num_embeddings=6, embedding_dim=obj_state_embedding_size)
@@ -133,31 +134,58 @@ class DisjointArmNavBaselineActorCritic(ActorCriticModel[CategoricalDistr]):
         Tuple of the `ActorCriticOutput` and recurrent hidden state.
         """
 
-        # ForkedPdb().set_trace()
-        #LATER_TODO complete this!
-        ForkedPdb().set_trace()
         arm2obj_dist = self.relative_dist_embedding_pick(observations['relative_agent_arm_to_obj'])
         obj2goal_dist = self.relative_dist_embedding_drop(observations['relative_obj_to_goal'])
         #LATER_TODO maybe relative arm to agent location would help too?
 
-        perception_embed = self.visual_encoder(observations)
+        perception_embed_pick = self.visual_encoder_pick(observations)
+        perception_embed_drop = self.visual_encoder_drop(observations)
+
+        # perception_embed = self.visual_encoder(observations)
         # if perception_embed.shape[0] > 20:
         #     is_weight_nan(self)# remove
-        x = [arm2obj_dist, obj2goal_dist, perception_embed]
 
-        x_cat = torch.cat(x, dim=1)  # type: ignore
+        pickup_bool = (observations['pickedup_object'])
+        before_pickup = pickup_bool == 0 #not used because of our initialization
+        after_pickup = pickup_bool == 1
+        distances = arm2obj_dist
+        distances[after_pickup] = obj2goal_dist[after_pickup]
+
+
+        perception_embed = perception_embed_pick
+        perception_embed[after_pickup] = perception_embed_drop[after_pickup]
+
+        x = [distances, perception_embed]
+
+        x_cat = torch.cat(x, dim=-1)  # type: ignore
         x_out, rnn_hidden_states = self.state_encoder(x_cat, memory.tensor("rnn"), masks)
+        actor_out_pick = self.actor_pick(x_out)
+        critic_out_pick = self.critic_pick(x_out)
 
-        def is_bad(tensor_x):
-            return torch.any(tensor_x != tensor_x) or torch.any(torch.isinf(tensor_x))
+        actor_out_drop = self.actor_drop(x_out)
+        critic_out_drop = self.critic_drop(x_out)
 
 
-        actor_out = self.actor(x_out)
-        critic_out = self.critic(x_out)
+        actor_out = actor_out_pick
+        actor_out[after_pickup] = actor_out_drop[after_pickup]
+        critic_out = critic_out_pick
+        critic_out[after_pickup] = critic_out_drop[after_pickup]
+
+
+        # actor_out = self.actor(x_out)
+        # critic_out = self.critic(x_out)
+        # actor_critic_output = ActorCriticOutput(
+        #     distributions=actor_out, values=critic_out, extras={}
+        # )
+        #
+        # updated_memory = memory.set_tensor('rnn', rnn_hidden_states)
+
+
+
+        actor_out = CategoricalDistr(logits=actor_out)
         actor_critic_output = ActorCriticOutput(
             distributions=actor_out, values=critic_out, extras={}
         )
-
         updated_memory = memory.set_tensor('rnn', rnn_hidden_states)
 
         # distributions, values = self.actor_and_critic(x_out)

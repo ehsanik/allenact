@@ -2,7 +2,7 @@ import argparse
 import os
 import pdb
 
-list_of_servers = ['kiana-workstation', 'vision-server11', 'vision-server12', 'vision-server14', 'aws2', 'aws4', 'aws5', 'aws6', 'aws7', 'aws8', 'aws9', 'aws10', 'aws11']
+list_of_servers = ['kiana-workstation', 'vision-server12', 'aws15', 'aws16', 'aws17', 'aws18', 'aws14']
 
 def parse_args():
     parser = argparse.ArgumentParser(description='Sync')

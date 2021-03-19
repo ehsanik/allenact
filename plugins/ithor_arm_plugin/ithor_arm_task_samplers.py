@@ -10,7 +10,7 @@ import gym
 from core.base_abstractions.task import Task
 from plugins.ithor_arm_plugin.arm_calculation_utils import initialize_arm
 
-from plugins.ithor_arm_plugin.ithor_arm_tasks import PickUpDropOffTask, OnlyPickUpTask
+from plugins.ithor_arm_plugin.ithor_arm_tasks import PickUpDropOffTask, OnlyPickUpTask, WDoneActionTask
 from plugins.ithor_arm_plugin.ithor_arm_environment import IThorMidLevelEnvironment, IThorMidLevelDepthEnvironment
 from core.base_abstractions.sensor import Sensor
 from core.base_abstractions.task import TaskSampler
@@ -71,7 +71,7 @@ class MidLevelArmTaskSampler(TaskSampler):
         if deterministic_cudnn:
             set_deterministic_cudnn()
 
-        self.reset()#TODO this one
+        self.reset()# TODO this one
         self.visualizers = visualizers
         self.sampler_mode = kwargs['sampler_mode']
         self.cap_training = kwargs['cap_training']
@@ -162,7 +162,7 @@ class PickupDropOffGeneralSampler(MidLevelArmTaskSampler):
 
         for scene in self.scenes:
             for object in self.objects:
-                valid_position_adr = 'datasets/ithor-armnav/pruned_valid_{}_positions_in_{}.json'.format(object, scene)
+                valid_position_adr = 'datasets/ithor-armnav/pruned_v2_valid_{}_positions_in_{}.json'.format(object, scene)
                 try:
                     with open(valid_position_adr) as f:
                         data_points = json.load(f)
@@ -182,6 +182,7 @@ class PickupDropOffGeneralSampler(MidLevelArmTaskSampler):
 
         if self.cap_training is not None:
             print('We are doing cap training!!!')
+            ForkedPdb().set_trace()
             # To be consistent across runs
             random.seed(0)
             for countertop_obj in self.countertop_object_to_data_id.keys():
@@ -200,7 +201,7 @@ class PickupDropOffGeneralSampler(MidLevelArmTaskSampler):
             self.deterministic_data_list = []
             for scene in self.scenes:
                 for object in self.objects:
-                    valid_position_adr = 'datasets/ithor-armnav/pruned_w_nav_tasks_{}_positions_in_{}.json'.format(object, scene) #TODO we need to change this for pickup drop same counter
+                    valid_position_adr = 'datasets/ithor-armnav/pruned_v2_w_nav_tasks_{}_positions_in_{}.json'.format(object, scene)
                     try:
                         with open(valid_position_adr) as f:
                             data_points = json.load(f)
@@ -356,7 +357,149 @@ class PickupDropOffGeneralSampler(MidLevelArmTaskSampler):
 class OnlyPickupGeneralSampler(PickupDropOffGeneralSampler):
     _TASK_TYPE = OnlyPickUpTask
 
+class WDoneActionTaskSampler(PickupDropOffGeneralSampler):
+    _TASK_TYPE = WDoneActionTask
+
+class RandomAgentWDoneActionTaskSampler(PickupDropOffGeneralSampler):
+    _TASK_TYPE = WDoneActionTask
+    def __init__(
+            self,
+            **kwargs
+    ) -> None:
+
+        super(RandomAgentWDoneActionTaskSampler, self).__init__(**kwargs)
+        with open('datasets/ithor-armnav/valid_agent_initial_locations.json') as f:
+            self.possible_agent_reachable_poses = json.load(f)
+
+    def next_task(self, force_advance_scene: bool = False) -> Optional[PickUpDropOffTask]:
+        if self.max_tasks is not None and self.max_tasks <= 0:
+            return None
+
+        if self.sampler_mode != 'train' and self.length <= 0: #TODO I added this but why?
+            return None
+
+
+        source_data_point, target_data_point = self.get_source_target_indices()
+
+
+        scene = source_data_point['scene_name']
+
+        assert source_data_point['object_id'] == target_data_point['object_id']
+        assert source_data_point['scene_name'] == target_data_point['scene_name']
+
+
+
+        if self.env is None:
+            self.env = self._create_environment()
+
+        self.env.reset(scene_name=scene, agentMode="arm", agentControllerType="mid-level")
+
+        source_location = source_data_point
+        target_location = dict(position=target_data_point['object_location'], rotation = {'x':0, 'y':0, 'z':0})
+
+
+        task_info = {
+            'objectId': source_location['object_id'],
+            'countertop_id': source_location['countertop_id'],
+            "source_location": source_location,
+            'target_location': target_location,
+        }
+
+        this_controller = self.env
+
+        event = transport_wrapper(this_controller, source_location['object_id'], source_location['object_location'])
+        if event.metadata['lastActionSuccess'] == False:
+            print('oh no could not transport')
+
+
+        agent_state = source_location['initial_agent_pose'] # THe only line different from father
+
+
+
+        event1, event2, event3 = initialize_arm(this_controller)
+
+        if not(event1.metadata['lastActionSuccess'] and event2.metadata['lastActionSuccess'] and event3.metadata['lastActionSuccess']):
+            print('ARM MOVEMENT FAILED> SHOUD NEVER HAPPEN')
+            # print('scene', scene, initial_pose, ADITIONAL_ARM_ARGS)
+            # print(event1.metadata['actionReturn'] , event2.metadata['actionReturn'] , event3.metadata['actionReturn'])
+
+
+        event = this_controller.step(dict(action='TeleportFull', standing=True, x=agent_state['position']['x'], y=agent_state['position']['y'], z=agent_state['position']['z'], rotation=dict(x=agent_state['rotation']['x'], y=agent_state['rotation']['y'], z=agent_state['rotation']['z']), horizon=agent_state['cameraHorizon']))
+        if event.metadata['lastActionSuccess'] == False:
+            print('oh no could not teleport')
+
+        # remove this
+        if self.env._verbose:
+            print('task: ', task_info['objectId'], task_info['countertop_id'], 'source_location', task_info['source_location'], 'target_location', task_info['target_location'], )
+            print('counter_top_source', source_data_point['countertop_id'], 'counter_top_target', target_data_point['countertop_id'])
+
+        should_visualize_goal_start = [x for x in self.visualizers if issubclass(type(x), ImageVisualizer)]
+        if len(should_visualize_goal_start) > 0:
+            task_info['visualization_source'] = source_data_point
+            task_info['visualization_target'] = target_data_point
+
+
+        self._last_sampled_task = self._TASK_TYPE(
+            env=self.env,
+            sensors=self.sensors,
+            task_info=task_info,
+            max_steps=self.max_steps,
+            action_space=self._action_space,
+            visualizers=self.visualizers,
+            reward_configs=self.rewards_config,
+        )
+
+
+        # if task_info['objectId'] == 'Bread|-00.52|+01.17|-00.03' and task_info['countertop_id'] == 'CounterTop|-01.87|+00.95|-01.21':
+        #     ForkedPdb().set_trace()
+        return self._last_sampled_task
+
+    def get_source_target_indices(self):
+        if self.sampler_mode == 'train':
+            valid_countertops = [k for (k, v) in self.countertop_object_to_data_id.items() if len(v) > 1]
+            countertop_id = random.choice(valid_countertops)
+            indices = random.sample(self.countertop_object_to_data_id[countertop_id], 2)
+            result = self.all_possible_points[indices[0]],self.all_possible_points[indices[1]]
+            scene_name = result[0]['scene_name']
+            selected_agent_init_loc = random.choice(self.possible_agent_reachable_poses[scene_name])
+            initial_agent_pose = {'name': 'agent', 'position': {'x': selected_agent_init_loc['x'], 'y': selected_agent_init_loc['y'], 'z': selected_agent_init_loc['z']}, 'rotation': {'x': -0.0, 'y': selected_agent_init_loc['rotation'], 'z': 0.0}, 'cameraHorizon': selected_agent_init_loc['horizon'], 'isStanding': True}
+            result[0]['initial_agent_pose'] = initial_agent_pose
+        else: #TODO we need to fix this for test set, agent init location needs to be fixed
+            result = self.deterministic_data_list[self.sampler_index]
+            # ForkedPdb().set_trace()
+            self.sampler_index += 1
+            scene_name = result[0]['scene_name']
+            selected_agent_init_loc = random.choice(self.possible_agent_reachable_poses[scene_name])
+            initial_agent_pose = {'name': 'agent', 'position': {'x': selected_agent_init_loc['x'], 'y': selected_agent_init_loc['y'], 'z': selected_agent_init_loc['z']}, 'rotation': {'x': -0.0, 'y': selected_agent_init_loc['rotation'], 'z': 0.0}, 'cameraHorizon': selected_agent_init_loc['horizon'], 'isStanding': True}
+            result[0]['initial_agent_pose'] = initial_agent_pose
+
+        return result
+
 class SameCounterGeneralSampler(PickupDropOffGeneralSampler):
+
+    def __init__(self, **kwargs):
+        super(SameCounterGeneralSampler, self).__init__(**kwargs)
+        if self.sampler_mode != 'train': # Be aware that this totally overrides some stuff
+            self.deterministic_data_list = []
+            for scene in self.scenes:
+                for object in self.objects:
+                    valid_position_adr = 'datasets/ithor-armnav/pruned_v2_no_nav_tasks_{}_positions_in_{}.json'.format(object, scene)
+                    try:
+                        with open(valid_position_adr) as f:
+                            data_points = json.load(f)
+                    except Exception:
+                        print('Failed to load', valid_position_adr)
+                        continue
+                    visible_data = [data for data in data_points[scene]]
+                    self.deterministic_data_list += visible_data
+
+                    # [v[0]['countertop_id'] for v in visible_data]
+        if self.sampler_mode == 'test':
+            random.shuffle(self.deterministic_data_list)
+            # very patched up
+            self.max_tasks = self.reset_tasks = len(self.deterministic_data_list)
+
+
     def get_source_target_indices(self):
         if self.sampler_mode == 'train':
             valid_countertops = [k for (k, v) in self.countertop_object_to_data_id.items() if len(v) > 2]
@@ -365,7 +508,7 @@ class SameCounterGeneralSampler(PickupDropOffGeneralSampler):
             result = self.all_possible_points[indices[0]],self.all_possible_points[indices[1]]
 
         else:
-            result = self.deterministic_data_list[self.sampler_index] #TODO this is obciously wrong for same counter
+            result = self.deterministic_data_list[self.sampler_index]
             # ForkedPdb().set_trace()
             self.sampler_index += 1
             # self.max_tasks -= 1

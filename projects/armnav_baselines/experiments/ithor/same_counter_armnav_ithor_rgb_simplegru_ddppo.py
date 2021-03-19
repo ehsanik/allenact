@@ -13,7 +13,7 @@ from projects.armnav_baselines.experiments.armnav_mixin_simplegru import (
 )
 
 
-class PickUpOnlyArmNaviThorRGBPPOExperimentConfig(
+class SameCounterArmNaviThorRGBPPOExperimentConfig(
     ArmNaviThorBaseConfig, ArmNavMixInPPOConfig, ArmNavMixInSimpleGRUConfig,
 ):
     """An Object Navigation experiment configuration in iThor with RGB

@@ -161,25 +161,25 @@ class IThorMidLevelEnvironment(IThorEnvironment):
 
         self._started = True
         self.reset(scene_name=scene_name, move_mag=move_mag, **kwargs)
-    def reset_init_params(self):#, **kwargs):#TODO there is discrepency here. how about when we change these?
-        self.controller.initialization_parameters.update(
-            # "gridSize": self._grid_size,
-            # "visibilityDistance": self._visibility_distance,
-            # "fov": self._fov,
-            # "makeAgentsVisible": self.make_agents_visible,
-            # "alwaysReturnVisibleRange": self._always_return_visible_range,
-            # **kwargs,
-            #TODO SERIOUSLY?
-            dict(gridSize=0.25,
-            width=224, height=224,
-            visibilityDistance=1.0,
-            agentMode='arm', fieldOfView=100,
-            agentControllerType='mid-level',
-            # server_class=ai2thor.fifo_server.FifoServer,
-            useMassThreshold = True, massThreshold = 10,
-            autoSimulation=False, autoSyncTransforms=True)
-
-        )
+    # def reset_init_params(self):#, **kwargs):TODO there is discrepency here. how about when we change these?
+    #     self.controller.initialization_parameters.update(
+    #         # "gridSize": self._grid_size,
+    #         # "visibilityDistance": self._visibility_distance,
+    #         # "fov": self._fov,
+    #         # "makeAgentsVisible": self.make_agents_visible,
+    #         # "alwaysReturnVisibleRange": self._always_return_visible_range,
+    #         # **kwargs,
+    #         TODO SERIOUSLY?
+    #         dict(gridSize=0.25,
+    #         width=224, height=224,
+    #         visibilityDistance=1.0,
+    #         agentMode='arm', fieldOfView=100,
+    #         agentControllerType='mid-level',
+    #         # server_class=ai2thor.fifo_server.FifoServer,
+    #         useMassThreshold = True, massThreshold = 10,
+    #         autoSimulation=False, autoSyncTransforms=True)
+    #
+    #     )
     def reset(
         self, scene_name: Optional[str], move_mag: float = 0.25, **kwargs,
     ):
@@ -188,7 +188,7 @@ class IThorMidLevelEnvironment(IThorEnvironment):
 
         if scene_name is None:
             scene_name = self.controller.last_event.metadata["sceneName"]
-        # self.reset_init_params()#**kwargs) #TODO does removing this fixes the problem?
+        # self.reset_init_params()#**kwargs) TODO does removing this fixes the problem?
 
         reset_environment_and_additional_commands(self.controller, scene_name)
 
@@ -216,7 +216,9 @@ class IThorMidLevelEnvironment(IThorEnvironment):
 
         raise Exception('not used')
 
-
+    def is_object_at_low_level_hand(self,object_id):
+        current_objects_in_hand = self.controller.last_event.metadata['arm']['HeldObjects']
+        return object_id in current_objects_in_hand
     def object_in_hand(self):
         """Object metadata for the object in the agent's hand."""
         inv_objs = self.last_event.metadata["inventoryObjects"]
@@ -314,7 +316,27 @@ class IThorMidLevelEnvironment(IThorEnvironment):
             print('PICKUP FAILED')
             return False
 
+    def get_current_object_locations(self):
+        obj_loc_dict = {}
+        metadata = self.controller.last_event.metadata['objects']
+        for o in metadata:
+            obj_loc_dict[o['objectId']] = dict(position=o['position'], rotation=o['rotation'])
+        return copy.deepcopy(obj_loc_dict)
+    def close_enough(self, current_obj_pose, init_obj_pose, threshold):
+        position_close = [abs(current_obj_pose['position'][k] - init_obj_pose['position'][k]) <= threshold for k in ['x','y','z']]
+        position_is_close = sum(position_close) == 3
+        rotation_close = [abs(current_obj_pose['rotation'][k] - init_obj_pose['rotation'][k]) <= threshold for k in ['x','y','z']]
+        rotation_is_close = sum(rotation_close) == 3
+        return position_is_close and rotation_is_close
+    def get_objects_moved(self, initial_object_locations): #TODO this might be pretty slow actually
+        current_object_locations = self.get_current_object_locations()
+        moved_objects = []
+        MOVE_THR = 0.01 #TODO is this a good number?
+        for object_id in current_object_locations.keys():
+            if not self.close_enough(current_object_locations[object_id], initial_object_locations[object_id], threshold=MOVE_THR):
+                moved_objects.append(object_id)
 
+        return moved_objects
     def step(
             self, action_dict: Dict[str, Union[str, int, float]]
     ) -> ai2thor.server.Event:
@@ -337,6 +359,21 @@ class IThorMidLevelEnvironment(IThorEnvironment):
 
         if action in ['PickUpMidLevel', 'DoneMidLevel']:
             action_dict['action'] = 'Pass'
+            if action == 'PickUpMidLevel':
+                object_id = action_dict['object_id']
+                if not self.is_object_at_low_level_hand(object_id):
+                    # pickupable_objects = self.env.get_pickupable_objects()
+                    #
+                    # if object_id in pickupable_objects:
+                    #This version of the task is actually harder #TODO consider making it easier, are we penalizing failed pickup?
+                    event = self.step(dict(action='PickUpMidLevelHand'))
+                    # TODO we are doing an additional pass here, label is not right and if we fail we will do it twice
+                    # TODO are we penalizing failed pickup?
+                    #TODO double check logic
+                    object_inventory = self.controller.last_event.metadata['arm']['HeldObjects']
+                    if len(object_inventory) > 0 and object_id not in object_inventory:
+                        event = self.step(dict(action='DropMidLevelHand'))
+
 
         elif not 'MoveArm' in action:
             if 'Continuous' in action:

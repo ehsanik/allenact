@@ -51,8 +51,6 @@ Pillow==6.2.2
 proglog==0.1.9
 progressbar2==3.53.1
 protobuf==3.14.0
-pyasn1==0.4.8
-pyasn1-modules==0.2.8
 pyglet==1.5.0
 pyparsing==2.4.7
 pyquaternion==0.9.9

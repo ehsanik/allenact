@@ -1,5 +1,4 @@
 from plugins.ithor_arm_plugin.ithor_arm_sensors import RelativeAgentArmToObjectSensor, RelativeObjectToGoalSensor, PickedUpObjSensor
-from plugins.ithor_arm_plugin.ithor_arm_task_samplers import OnlyPickupGeneralSampler
 from plugins.ithor_plugin.ithor_sensors import RGBSensorThor
 
 from projects.armnav_baselines.experiments.ithor.armnav_ithor_base import (
@@ -11,11 +10,11 @@ from projects.armnav_baselines.experiments.armnav_mixin_ddppo import (
 from projects.armnav_baselines.experiments.armnav_mixin_simplegru import (
     ArmNavMixInSimpleGRUConfig,
 )
-from projects.armnav_baselines.experiments.ithor.pickup_only_armnav_ithor_rgb_simplegru_ddppo import PickUpOnlyArmNaviThorRGBPPOExperimentConfig
+from projects.armnav_baselines.experiments.ithor.armnav_ithor_rgb_simplegru_ddppo import ArmNaviThorRGBPPOExperimentConfig
 
 
-class TestTrainPickUpOnlyArmNaviThorRGBPPOExperimentConfig(
-    PickUpOnlyArmNaviThorRGBPPOExperimentConfig
+class VisualizeArmNaviThorRGBPPOExperimentConfig(
+    ArmNaviThorRGBPPOExperimentConfig
 ):
     """An Object Navigation experiment configuration in iThor with RGB
     input."""
@@ -32,13 +31,13 @@ class TestTrainPickUpOnlyArmNaviThorRGBPPOExperimentConfig(
         RelativeObjectToGoalSensor(),
         PickedUpObjSensor(),
     ]
-    TASK_SAMPLER = OnlyPickupGeneralSampler
-    MAX_STEPS = 120
 
-    TEST_SCENES = PickUpOnlyArmNaviThorRGBPPOExperimentConfig.TRAIN_SCENES
+    MAX_STEPS = 200
+    # TEST_SCENES = ArmNaviThorRGBPPOExperimentConfig.TRAIN_SCENES
     VISUALIZE = True
     NUM_PROCESSES = 1
     NUMBER_OF_TEST_PROCESS = 1
+
 
     @classmethod
     def tag(cls):

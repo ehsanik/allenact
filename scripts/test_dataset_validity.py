@@ -13,8 +13,8 @@ from plugins.ithor_arm_plugin.arm_calculation_utils import initialize_arm, is_ob
 
 SCENES = ["FloorPlan{}_physics".format(str(i + 1)) for i in range(30)]
 
-# OBJECTS = TRAIN_OBJECTS #
-OBJECTS = TEST_OBJECTS
+OBJECTS = TRAIN_OBJECTS # + TEST_OBJECTS#
+# OBJECTS = TEST_OBJECTS
 
 
 def test_initial_location(controller):
@@ -102,7 +102,7 @@ def prune_data_points(controller):
                 if result:
                     remaining_valid.append(datapoint)
             print('out of ', len(visible_data), 'remained', len(remaining_valid))
-            with open('datasets/ithor-armnav/pruned_valid_{}_positions_in_{}.json'.format(o, s), 'w') as f:
+            with open('datasets/ithor-armnav/pruned_v2_valid_{}_positions_in_{}.json'.format(o, s), 'w') as f:
                 json.dump({s: remaining_valid}, f)
 
 def parse_args():

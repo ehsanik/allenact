@@ -47,7 +47,7 @@ class ArmNavThorBaseConfig(ArmNavBaseConfig, ABC):
 
     OBJECT_TYPES: Optional[Sequence[str]] = None
 
-    #TODO fix this maybe
+    #LUCA_TODO TODO fix this maybe
     VALID_SAMPLES_IN_SCENE = 1
     TEST_SAMPLES_IN_SCENE = 1
 

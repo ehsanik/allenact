@@ -14,7 +14,8 @@ import ai2thor.fifo_server
 from plugins.ithor_plugin.ithor_environment import IThorEnvironment
 from utils.debugger_util import ForkedPdb
 
-ARM_BUILD_NUMBER = '6da9163ea2b6766a632d27bc14ebacee7b9cf9fa'
+# ARM_BUILD_NUMBER = '6da9163ea2b6766a632d27bc14ebacee7b9cf9fa'
+ARM_BUILD_NUMBER = '43f62a0aa2a1aaafb6fd05d28bea74fdc866eea1'
 
 ARM_MIN_HEIGHT = 0.450998873
 ARM_MAX_HEIGHT = 1.8009994
@@ -58,6 +59,7 @@ def reset_environment_and_additional_commands(controller, scene_name):
     controller.reset(scene_name)
     controller.step('PausePhysicsAutoSim', autoSyncTransforms=False)
     controller.step(action='MakeAllObjectsMoveable')
+    controller.step(action='MakeObjectsStaticKinematicMassThreshold')
     make_all_objects_unbreakable(controller)
     return
 

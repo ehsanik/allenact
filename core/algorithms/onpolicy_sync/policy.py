@@ -167,6 +167,7 @@ class LinearActorCriticHead(nn.Module):
         return CategoricalDistr(logits=logits), values
 
 
+
 class LinearCriticHead(nn.Module):
     def __init__(self, input_size: int):
         super().__init__()
@@ -211,3 +212,25 @@ class LinearActorHead(nn.Module):
 
         # noinspection PyArgumentList
         return CategoricalDistr(logits=x)
+class LinearActorHeadNoCategory(nn.Module):
+    def __init__(self, num_inputs: int, num_outputs: int):
+        super().__init__()
+
+        self.linear = nn.Linear(num_inputs, num_outputs)
+        nn.init.orthogonal_(self.linear.weight, gain=0.01)
+        nn.init.constant_(self.linear.bias, 0)
+
+    def forward(self, x: torch.FloatTensor):  # type: ignore
+        x = self.linear(x)  # type:ignore
+
+        assert len(x.shape) in [
+            3,
+            4,
+        ], "x must be [step, sampler, data] or [step, sampler, agent, data]"
+
+        if len(x.shape) == 3:
+            # [step, sampler, data] -> [step, sampler, agent, data]
+            x = cast(torch.FloatTensor, x.unsqueeze(-2))
+
+        # noinspection PyArgumentList
+        return x

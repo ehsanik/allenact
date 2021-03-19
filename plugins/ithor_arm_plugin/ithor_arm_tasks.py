@@ -1,3 +1,4 @@
+import copy
 import random
 import warnings
 from typing import Dict, Tuple, List, Any, Optional
@@ -79,6 +80,7 @@ class PickUpDropOffTask(Task[IThorMidLevelEnvironment]):
         self.object_picked_up = False
         self.got_reward_for_pickup = False
         self.reward_configs = kwargs['reward_configs']
+        self.initial_object_metadata = (self.env.get_current_object_locations())
 
 
     @property
@@ -99,7 +101,7 @@ class PickUpDropOffTask(Task[IThorMidLevelEnvironment]):
         #KIANA ignore rotation for now
         position1 = s1['position']
         position2 = s2['position']
-        eps = MOVE_ARM_CONSTANT * 2 #TODO we need to talk about this. is it okay to have this big of a distance? or should we only do this for y because that is the hardest?
+        eps = MOVE_ARM_CONSTANT * 2 # we need to talk about this. is it okay to have this big of a distance? or should we only do this for y because that is the hardest?
         return (abs(position1['x'] - position2['x']) < eps and abs(position1['y'] - position2['y']) < eps and abs(position1['z'] - position2['z']) < eps)
 
 
@@ -141,7 +143,7 @@ class PickUpDropOffTask(Task[IThorMidLevelEnvironment]):
         action_success_stat['metric/action_success/total'] = 0.
 
         seq_len = len(self.action_sequence_and_success)
-        for (action_name, action_success) in self.action_sequence_and_success: #TODO is this too slow?
+        for (action_name, action_success) in self.action_sequence_and_success: # TODO is this too slow?
             action_stat['metric/action_stat/' + action_name] += 1.
             action_success_stat['metric/action_success/{}'.format(action_name)] += (action_success)
             action_success_stat['metric/action_success/total'] += (action_success)
@@ -174,6 +176,8 @@ class PickUpDropOffTask(Task[IThorMidLevelEnvironment]):
             original_distance = self.get_original_object_distance()
             result['metric/average/original_distance'] = original_distance
 
+
+
             # this ratio can be more than 1?
             if self.object_picked_up:
                 ratio_distance_left = final_obj_distance_from_goal / original_distance
@@ -182,6 +186,13 @@ class PickUpDropOffTask(Task[IThorMidLevelEnvironment]):
 
             if self._success:
                 result['metric/average/eplen_success'] = result['ep_length']
+
+                objects_moved = self.env.get_objects_moved(self.initial_object_metadata)
+                # Unnecessary, this is definitely happening objects_moved.remove(self.task_info['object_id'])
+                result['metric/average/number_of_unwanted_moved_objects'] = len(objects_moved) - 1
+                result['metric/average/success_wo_disturb'] = len(objects_moved) == 1
+
+
             result['success'] = self._success
 
             self.finish_visualizer_metrics(result)
@@ -196,32 +207,6 @@ class PickUpDropOffTask(Task[IThorMidLevelEnvironment]):
 
         action_str = self.class_action_names()[action]
 
-        #TODO remove
-        self.manual_running = False
-
-
-        # TODO remove action_sequence = ['MoveAheadContinuous', 'RotateRightContinuous', 'RotateLeftContinuous', 'RotateLeftContinuous', 'MoveAheadContinuous', 'MoveAheadContinuous', 'MoveArmXM', 'MoveArmXM', 'MoveArmXM', 'MoveArmXM', 'MoveArmXM', 'MoveArmXM', 'MoveArmXM', 'MoveArmXM', 'MoveArmZP', 'MoveArmZP', 'MoveArmZP', 'MoveArmZP', 'MoveArmZP', 'MoveArmZP', 'MoveArmZP', 'MoveArmZP', 'MoveArmZP', 'MoveArmZP', 'MoveArmZM', 'MoveArmHeightP', 'MoveArmHeightP', 'MoveArmHeightP', 'MoveArmHeightP', 'MoveArmHeightM', 'MoveArmHeightM', 'MoveArmHeightM', 'MoveArmHeightM', 'MoveArmHeightM', 'MoveArmHeightM', 'MoveArmHeightM', 'MoveArmHeightM', 'MoveArmXM', 'MoveArmXM', 'MoveArmZM', 'MoveArmZP', 'MoveArmXM', 'MoveArmXM', 'MoveArmHeightM', 'RotateRightContinuous', 'RotateRightContinuous', 'RotateRightContinuous', 'MoveAheadContinuous', 'RotateRightContinuous', 'MoveArmHeightP', 'MoveArmHeightP', 'MoveArmHeightP', 'MoveArmHeightP', 'MoveArmHeightP', 'MoveArmHeightP', 'RotateRightContinuous', 'MoveAheadContinuous', 'MoveAheadContinuous', 'MoveAheadContinuous', 'MoveArmXM', 'MoveArmXM', 'MoveArmXM', 'MoveArmZM', 'MoveArmZM', 'MoveArmZM', 'MoveArmZM', 'MoveArmZM', 'MoveArmHeightP', 'MoveArmHeightM', 'MoveArmHeightM', 'MoveArmHeightM', 'MoveArmHeightM', 'MoveArmHeightM', 'MoveArmZM', 'MoveArmZM', 'MoveArmZM', 'MoveArmZM', 'MoveArmHeightP', 'MoveArmHeightM', 'MoveArmHeightM', 'MoveArmHeightM']
-        # try:
-        #     action_str = action_sequence[self.action_index]
-        #     self.action_index += 1
-        # except Exception:
-        #     action_str = action_sequence[0]
-        #     self.action_index = 1
-
-
-        # remove
-        # self.manual_running = True
-        if self.manual_running: #manual running
-            self.env.controller.step('Pass')
-            action_translator = {
-                'u': MOVE_ARM_HEIGHT_P, 'j': MOVE_ARM_HEIGHT_M, 's': MOVE_ARM_X_P, 'a': MOVE_ARM_X_M, '4': MOVE_ARM_Y_P, '3': MOVE_ARM_Y_M, 'w': MOVE_ARM_Z_P, 'z': MOVE_ARM_Z_M, 'mm': MOVE_AHEAD, 'rr': ROTATE_RIGHT, 'll': ROTATE_LEFT
-            }
-            act='something'
-            #To see all details self.env.list_of_actions_so_far
-            while(act not in action_translator):
-                ForkedPdb().set_trace()
-            action_str = action_translator[act]
-            #We should set the action here
 
         self._last_action_str = action_str
         self.env.step({"action": action_str})
@@ -237,8 +222,6 @@ class PickUpDropOffTask(Task[IThorMidLevelEnvironment]):
 
         success_finished_task = False
 
-        if self.manual_running:
-            print(self.env.controller.last_event)
 
 
         if not self.object_picked_up:
@@ -264,8 +247,6 @@ class PickUpDropOffTask(Task[IThorMidLevelEnvironment]):
             self._success = True
             self.last_action_success = True
 
-        if self.manual_running:
-            print('pickedup', self.object_picked_up, 'arm_distance_from_obj', self.arm_distance_from_obj(), 'obj_distance_from_goal', self.obj_distance_from_goal())
 
 
         step_result = RLStepResult(
@@ -333,15 +314,61 @@ class PickUpDropOffTask(Task[IThorMidLevelEnvironment]):
         self.last_obj_to_goal_distance = current_obj_to_goal_distance
         reward += delta_obj_to_goal_distance_reward
 
-        # remove
-        if self.manual_running:
-            print('delta obj2arm', delta_arm_to_obj_distance_reward, 'delta obj2goal', delta_obj_to_goal_distance_reward, 'reward', reward)
+
 
         # distance * 0.1 does not make sense because then it will not take any actions
 
         # add collision cost, maybe distance to goal objective,...
 
         return float(reward)
+
+class WDoneActionTask(PickUpDropOffTask):
+    _actions = (MOVE_ARM_HEIGHT_P, MOVE_ARM_HEIGHT_M, MOVE_ARM_X_P, MOVE_ARM_X_M, MOVE_ARM_Y_P, MOVE_ARM_Y_M, MOVE_ARM_Z_P, MOVE_ARM_Z_M, MOVE_AHEAD, ROTATE_RIGHT, ROTATE_LEFT, PICKUP, DONE)
+
+    def _step(self, action: int) -> RLStepResult:
+
+        action_str = self.class_action_names()[action]
+
+
+        self._last_action_str = action_str
+        action_dict = {"action": action_str}
+        object_id = self.task_info['objectId']
+        if action_str == PICKUP:
+            action_dict = {**action_dict, 'object_id':object_id}
+        self.env.step(action_dict)
+        self.last_action_success = self.env.last_action_success
+
+        last_action_name = self._last_action_str
+        last_action_success = float(self.last_action_success)
+        self.action_sequence_and_success.append((last_action_name, last_action_success))
+        self.visualize(last_action_name)
+
+        # just check whether the object is within the reach, if yes, pick up
+
+
+
+        if not self.object_picked_up:
+
+            if self.env.is_object_at_low_level_hand(object_id):
+                self.object_picked_up = True
+                self.eplen_pickup = self._num_steps_taken + 1 # plus one because this step has not been counted yet
+
+        if action_str == DONE:
+            self._took_end_action = True
+            object_state = self.env.get_object_by_id(object_id)
+            goal_state = self.task_info['target_location']
+            goal_achieved = self.object_picked_up and self.obj_state_aproximity(object_state, goal_state)
+            self.last_action_success = goal_achieved
+            self._success = goal_achieved
+
+
+        step_result = RLStepResult(
+            observation=self.get_observations(),
+            reward=self.judge(),
+            done=self.is_done(),
+            info={"last_action_success": self.last_action_success},
+        )
+        return step_result
 
 class OnlyPickUpTask(PickUpDropOffTask):
 
@@ -390,8 +417,6 @@ class OnlyPickUpTask(PickUpDropOffTask):
         object_id = self.task_info['objectId']
 
         success_finished_task = False
-
-
 
         pickupable_objects = self.env.get_pickupable_objects()
 
