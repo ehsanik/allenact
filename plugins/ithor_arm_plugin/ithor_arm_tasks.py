@@ -187,10 +187,11 @@ class PickUpDropOffTask(Task[IThorMidLevelEnvironment]):
             if self._success:
                 result['metric/average/eplen_success'] = result['ep_length']
 
-                objects_moved = self.env.get_objects_moved(self.initial_object_metadata)
-                # Unnecessary, this is definitely happening objects_moved.remove(self.task_info['object_id'])
-                result['metric/average/number_of_unwanted_moved_objects'] = len(objects_moved) - 1
-                result['metric/average/success_wo_disturb'] = len(objects_moved) == 1
+                #TODO put back this is not the reason for being slow
+                # objects_moved = self.env.get_objects_moved(self.initial_object_metadata)
+                # # Unnecessary, this is definitely happening objects_moved.remove(self.task_info['object_id'])
+                # result['metric/average/number_of_unwanted_moved_objects'] = len(objects_moved) - 1
+                # result['metric/average/success_wo_disturb'] = len(objects_moved) == 1
 
 
             result['success'] = self._success

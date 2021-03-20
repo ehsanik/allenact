@@ -11,7 +11,7 @@ from core.base_abstractions.task import Task
 from plugins.ithor_arm_plugin.arm_calculation_utils import initialize_arm
 
 from plugins.ithor_arm_plugin.ithor_arm_tasks import PickUpDropOffTask, OnlyPickUpTask, WDoneActionTask
-from plugins.ithor_arm_plugin.ithor_arm_environment import IThorMidLevelEnvironment, IThorMidLevelDepthEnvironment
+from plugins.ithor_arm_plugin.ithor_arm_environment import IThorMidLevelEnvironment
 from core.base_abstractions.sensor import Sensor
 from core.base_abstractions.task import TaskSampler
 from utils.debugger_util import ForkedPdb
@@ -475,89 +475,15 @@ class RandomAgentWDoneActionTaskSampler(PickupDropOffGeneralSampler):
 
         return result
 
-class SameCounterGeneralSampler(PickupDropOffGeneralSampler):
-
-    def __init__(self, **kwargs):
-        super(SameCounterGeneralSampler, self).__init__(**kwargs)
-        if self.sampler_mode != 'train': # Be aware that this totally overrides some stuff
-            self.deterministic_data_list = []
-            for scene in self.scenes:
-                for object in self.objects:
-                    valid_position_adr = 'datasets/ithor-armnav/pruned_v2_no_nav_tasks_{}_positions_in_{}.json'.format(object, scene)
-                    try:
-                        with open(valid_position_adr) as f:
-                            data_points = json.load(f)
-                    except Exception:
-                        print('Failed to load', valid_position_adr)
-                        continue
-                    visible_data = [data for data in data_points[scene]]
-                    self.deterministic_data_list += visible_data
-
-                    # [v[0]['countertop_id'] for v in visible_data]
-        if self.sampler_mode == 'test':
-            random.shuffle(self.deterministic_data_list)
-            # very patched up
-            self.max_tasks = self.reset_tasks = len(self.deterministic_data_list)
-
-
-    def get_source_target_indices(self):
-        if self.sampler_mode == 'train':
-            valid_countertops = [k for (k, v) in self.countertop_object_to_data_id.items() if len(v) > 2]
-            countertop_id = random.choice(valid_countertops)
-            indices = random.sample(self.countertop_object_to_data_id[countertop_id], 2)
-            result = self.all_possible_points[indices[0]],self.all_possible_points[indices[1]]
-
-        else:
-            result = self.deterministic_data_list[self.sampler_index]
-            # ForkedPdb().set_trace()
-            self.sampler_index += 1
-            # self.max_tasks -= 1
-        assert result[0]['countertop_id'] == result[1]['countertop_id'] and result[0]['object_location'] != result[1]['object_location']
-        return result
-
-    def calc_possible_trajectories(self, all_possible_points):
-
-        countertop_object_to_data_id = {}
-
-        for i in range(len(all_possible_points)):
-            countertop_id = all_possible_points[i]['countertop_id']
-            object_id = all_possible_points[i]['object_id']
-            counter_object = '{}_{}'.format(countertop_id, object_id)
-            countertop_object_to_data_id.setdefault(counter_object, [])
-            countertop_object_to_data_id[counter_object].append(i)
-            #
-            # object_to_data_id.setdefault(object_id, [])
-            # object_to_data_id[object_id].append(i)
-
-        return countertop_object_to_data_id
-
-
-
-
-class DepthPickDropGeneralSampler(PickupDropOffGeneralSampler):
-
-    def _create_environment(self) -> IThorMidLevelEnvironment:
-        env = IThorMidLevelDepthEnvironment(
-            make_agents_visible=False,
-            object_open_speed=0.05,
-            # restrict_to_initially_reachable_points=True, # is this really important?
-            **self.env_args,
-        )
-
-        return env
-
-
-
-# class PickupDropOffGeneralSamplerDeterministic(PickupDropOffGeneralSampler): #LATER_TODO all the few shots should be with this one
+# class SameCounterGeneralSampler(PickupDropOffGeneralSampler):
 #
 #     def __init__(self, **kwargs):
-#         super().__init__(**kwargs)
-#
-#         if True: # Be aware that this totally overrides some stuff
+#         super(SameCounterGeneralSampler, self).__init__(**kwargs)
+#         if self.sampler_mode != 'train': # Be aware that this totally overrides some stuff
 #             self.deterministic_data_list = []
 #             for scene in self.scenes:
 #                 for object in self.objects:
-#                     valid_position_adr = 'datasets/ithor-armnav/w_nav_tasks_{}_positions_in_{}.json'.format(object, scene)
+#                     valid_position_adr = 'datasets/ithor-armnav/pruned_v2_no_nav_tasks_{}_positions_in_{}.json'.format(object, scene)
 #                     try:
 #                         with open(valid_position_adr) as f:
 #                             data_points = json.load(f)
@@ -568,30 +494,44 @@ class DepthPickDropGeneralSampler(PickupDropOffGeneralSampler):
 #                     self.deterministic_data_list += visible_data
 #
 #                     # [v[0]['countertop_id'] for v in visible_data]
-#             random.shuffle(self.deterministic_data_list)
-#             self.sampler_index = 0
-#             self.epoch = 0
 #         if self.sampler_mode == 'test':
+#             random.shuffle(self.deterministic_data_list)
 #             # very patched up
 #             self.max_tasks = self.reset_tasks = len(self.deterministic_data_list)
 #
 #
 #     def get_source_target_indices(self):
 #         if self.sampler_mode == 'train':
-#             if self.sampler_index >= len(self.deterministic_data_list):
-#                 random.shuffle(self.deterministic_data_list)
-#                 self.epoch += 1
-#                 print('Just finished epoch ', self.epoch)
-#             self.sampler_index %= len(self.deterministic_data_list)
-#             # valid_countertops = [k for (k, v) in self.countertop_object_to_data_id.items() if len(v) > 1]
-#             # countertop_id = random.choice(valid_countertops)
-#             # result = random.sample(self.countertop_object_to_data_id[countertop_id], 2)
+#             valid_countertops = [k for (k, v) in self.countertop_object_to_data_id.items() if len(v) > 2]
+#             countertop_id = random.choice(valid_countertops)
+#             indices = random.sample(self.countertop_object_to_data_id[countertop_id], 2)
+#             result = self.all_possible_points[indices[0]],self.all_possible_points[indices[1]]
 #
-#         result = self.deterministic_data_list[self.sampler_index]
-#         self.sampler_index += 1
-#         # self.max_tasks -= 1
-#
+#         else:
+#             result = self.deterministic_data_list[self.sampler_index]
+#             # ForkedPdb().set_trace()
+#             self.sampler_index += 1
+#             # self.max_tasks -= 1
+#         assert result[0]['countertop_id'] == result[1]['countertop_id'] and result[0]['object_location'] != result[1]['object_location']
 #         return result
+#
+#     def calc_possible_trajectories(self, all_possible_points):
+#
+#         countertop_object_to_data_id = {}
+#
+#         for i in range(len(all_possible_points)):
+#             countertop_id = all_possible_points[i]['countertop_id']
+#             object_id = all_possible_points[i]['object_id']
+#             counter_object = '{}_{}'.format(countertop_id, object_id)
+#             countertop_object_to_data_id.setdefault(counter_object, [])
+#             countertop_object_to_data_id[counter_object].append(i)
+#             #
+#             # object_to_data_id.setdefault(object_id, [])
+#             # object_to_data_id[object_id].append(i)
+#
+#         return countertop_object_to_data_id
+
+
 
 
 

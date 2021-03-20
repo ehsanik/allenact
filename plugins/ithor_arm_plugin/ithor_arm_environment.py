@@ -445,14 +445,5 @@ class IThorMidLevelEnvironment(IThorEnvironment):
 
         return sr
 
-class IThorMidLevelDepthEnvironment(IThorMidLevelEnvironment):
-    def create_controller(self):
-        raise Exception('Error')
-        # controller = Controller(
-        #         get the rest from the base
-        #         renderDepthImage=True,
-        #     )
-        # event = controller.step(action='MakeAllObjectsMoveable')
-        return controller
 
 

@@ -5,13 +5,7 @@ from plugins.ithor_plugin.ithor_sensors import RGBSensorThor
 from projects.armnav_baselines.experiments.ithor.armnav_ithor_base import (
     ArmNaviThorBaseConfig,
 )
-from projects.armnav_baselines.experiments.armnav_mixin_ddppo import (
-    ArmNavMixInPPOConfig,
-)
-from projects.armnav_baselines.experiments.armnav_mixin_simplegru import (
-    ArmNavMixInSimpleGRUConfig,
-)
-from projects.armnav_baselines.experiments.ithor.pickup_only_armnav_ithor_rgb_simplegru_ddppo import PickUpOnlyArmNaviThorRGBPPOExperimentConfig
+from legacy.pickup_only_armnav_ithor_rgb_simplegru_ddppo import PickUpOnlyArmNaviThorRGBPPOExperimentConfig
 
 
 class TestTrainPickUpOnlyArmNaviThorRGBPPOExperimentConfig(

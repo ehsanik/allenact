@@ -2,8 +2,8 @@ import ai2thor
 import gym
 
 from plugins.ithor_arm_plugin.ithor_arm_constants import ENV_ARGS
-from plugins.ithor_arm_plugin.ithor_arm_sensors import RelativeAgentArmToObjectSensor, RelativeObjectToGoalSensor, PickedUpObjSensor, DepthSensorThor
-from plugins.ithor_arm_plugin.ithor_arm_task_samplers import RandomAgentWDoneActionTaskSampler
+from plugins.ithor_arm_plugin.ithor_arm_sensors import RelativeAgentArmToObjectSensor, RelativeObjectToGoalSensor, PickedUpObjSensor, DepthSensorThor, BlindSensorThor
+from plugins.ithor_arm_plugin.ithor_arm_task_samplers import RandomAgentWDoneActionTaskSampler, WDoneActionTaskSampler
 from plugins.ithor_arm_plugin.ithor_arm_tasks import PickUpDropOffTask, WDoneActionTask
 from plugins.ithor_plugin.ithor_sensors import RGBSensorThor
 
@@ -21,7 +21,7 @@ import torch.nn as nn
 from projects.armnav_baselines.models.arm_nav_models import ArmNavBaselineActorCritic
 
 
-class RandomAgentLocWDoneDepthArmNav(
+class RGBDepthRandomAgentLocWDoneArmNav(
     ArmNaviThorBaseConfig, ArmNavMixInPPOConfig, ArmNavMixInSimpleGRUConfig,
 ):
     """An Object Navigation experiment configuration in iThor with RGB
@@ -34,6 +34,12 @@ class RandomAgentLocWDoneDepthArmNav(
             use_normalization=True,
             uuid="depth_lowres",
         ),
+        RGBSensorThor(
+            height=ArmNaviThorBaseConfig.SCREEN_SIZE,
+            width=ArmNaviThorBaseConfig.SCREEN_SIZE,
+            use_resnet_normalization=True,
+            uuid="rgb_lowres",
+        ),
         # GoalObjectTypeThorSensor(object_types=ArmNaviThorBaseConfig.OBJECT_TYPES,),
         RelativeAgentArmToObjectSensor(),
         RelativeObjectToGoalSensor(),
@@ -41,7 +47,8 @@ class RandomAgentLocWDoneDepthArmNav(
     ]
 
     MAX_STEPS = 200
-    TASK_SAMPLER = RandomAgentWDoneActionTaskSampler
+    # TASK_SAMPLER = RandomAgentWDoneActionTaskSampler #TODO
+    TASK_SAMPLER = WDoneActionTaskSampler
 
 
     def __init__(self):
