@@ -362,17 +362,17 @@ class IThorMidLevelEnvironment(IThorEnvironment):
             if action == 'PickUpMidLevel':
                 object_id = action_dict['object_id']
                 if not self.is_object_at_low_level_hand(object_id):
-                    # pickupable_objects = self.env.get_pickupable_objects()
+                    pickupable_objects = self.get_pickupable_objects()
                     #
-                    # if object_id in pickupable_objects:
-                    #This version of the task is actually harder #TODO consider making it easier, are we penalizing failed pickup?
-                    event = self.step(dict(action='PickUpMidLevelHand'))
-                    # TODO we are doing an additional pass here, label is not right and if we fail we will do it twice
-                    # TODO are we penalizing failed pickup?
-                    #TODO double check logic
-                    object_inventory = self.controller.last_event.metadata['arm']['HeldObjects']
-                    if len(object_inventory) > 0 and object_id not in object_inventory:
-                        event = self.step(dict(action='DropMidLevelHand'))
+                    if object_id in pickupable_objects:
+                        #This version of the task is actually harder #TODO consider making it easier, are we penalizing failed pickup?
+                        event = self.step(dict(action='PickUpMidLevelHand'))
+                        # TODO we are doing an additional pass here, label is not right and if we fail we will do it twice
+                        # TODO are we penalizing failed pickup?
+                        #TODO double check logic
+                        object_inventory = self.controller.last_event.metadata['arm']['HeldObjects']
+                        if len(object_inventory) > 0 and object_id not in object_inventory:
+                            event = self.step(dict(action='DropMidLevelHand'))
 
 
         elif not 'MoveArm' in action:

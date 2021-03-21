@@ -26,4 +26,4 @@ sudo pip3.6 install -e git+https://github.com/allenai/ai2thor.git@43f62a0aa2a1aa
 python3.6 >>>> import ai2thor.controller; c=ai2thor.controller.Controller(); c._build.url
 tensorboard --logdir experiment_output/tb --bind_all --port
 python3.6 main.py -o experiment_output -b projects/armnav_baselines/experiments/ithor/ armnav_ithor_rgb_simplegru_ddppo
-#ssh -NfL 6015:localhost:6015 aws15;ssh -NfL 6016:localhost:6016 aws16;
+#ssh -NfL 6015:localhost:6015 aws15;ssh -NfL 6016:localhost:6016 aws16;ssh -NfL 6014:localhost:6014 aws14;

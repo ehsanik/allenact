@@ -10,7 +10,7 @@ import gym
 from core.base_abstractions.task import Task
 from plugins.ithor_arm_plugin.arm_calculation_utils import initialize_arm
 
-from plugins.ithor_arm_plugin.ithor_arm_tasks import PickUpDropOffTask, OnlyPickUpTask, WDoneActionTask
+from plugins.ithor_arm_plugin.ithor_arm_tasks import PickUpDropOffTask, WDoneActionTask
 from plugins.ithor_arm_plugin.ithor_arm_environment import IThorMidLevelEnvironment
 from core.base_abstractions.sensor import Sensor
 from core.base_abstractions.task import TaskSampler
@@ -354,8 +354,8 @@ class PickupDropOffGeneralSampler(MidLevelArmTaskSampler):
         return object_to_data_id
 
 
-class OnlyPickupGeneralSampler(PickupDropOffGeneralSampler):
-    _TASK_TYPE = OnlyPickUpTask
+# class OnlyPickupGeneralSampler(PickupDropOffGeneralSampler):
+#     _TASK_TYPE = OnlyPickUpTask
 
 class WDoneActionTaskSampler(PickupDropOffGeneralSampler):
     _TASK_TYPE = WDoneActionTask
