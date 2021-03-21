@@ -2,7 +2,7 @@ import ai2thor
 import gym
 
 from plugins.ithor_arm_plugin.ithor_arm_constants import ENV_ARGS
-from plugins.ithor_arm_plugin.ithor_arm_sensors import RelativeAgentArmToObjectSensor, RelativeObjectToGoalSensor, PickedUpObjSensor, DepthSensorThor
+from plugins.ithor_arm_plugin.ithor_arm_sensors import RelativeAgentArmToObjectSensor, RelativeObjectToGoalSensor, PickedUpObjSensor, DepthSensorThor, BlindSensorThor
 from plugins.ithor_arm_plugin.ithor_arm_task_samplers import RandomAgentWDoneActionTaskSampler, WDoneActionTaskSampler
 from plugins.ithor_arm_plugin.ithor_arm_tasks import PickUpDropOffTask, WDoneActionTask
 from plugins.ithor_plugin.ithor_sensors import RGBSensorThor
@@ -21,18 +21,18 @@ import torch.nn as nn
 from projects.armnav_baselines.models.arm_nav_models import ArmNavBaselineActorCritic
 
 
-class DepthRandomAgentLocWDoneDepthArmNav(
+class BlindNOTRandomAgentLocWDoneArmNav(
     ArmNaviThorBaseConfig, ArmNavMixInPPOConfig, ArmNavMixInSimpleGRUConfig,
 ):
     """An Object Navigation experiment configuration in iThor with RGB
     input."""
 
     SENSORS = [
-        DepthSensorThor(
+        BlindSensorThor(
             height=ArmNaviThorBaseConfig.SCREEN_SIZE,
             width=ArmNaviThorBaseConfig.SCREEN_SIZE,
-            use_normalization=True,
-            uuid="depth_lowres",
+            use_resnet_normalization=False,
+            uuid="rgb_lowres",
         ),
         # GoalObjectTypeThorSensor(object_types=ArmNaviThorBaseConfig.OBJECT_TYPES,),
         RelativeAgentArmToObjectSensor(),
@@ -41,15 +41,14 @@ class DepthRandomAgentLocWDoneDepthArmNav(
     ]
 
     MAX_STEPS = 200
-    # TASK_SAMPLER = RandomAgentWDoneActionTaskSampler #TODO
-    TASK_SAMPLER  =WDoneActionTaskSampler
+    TASK_SAMPLER = WDoneActionTaskSampler
 
 
     def __init__(self):
         super().__init__()
 
         assert self.CAMERA_WIDTH == 224 and self.CAMERA_HEIGHT == 224 and self.VISIBILITY_DISTANCE == 1 and self.STEP_SIZE == 0.25
-        self.ENV_ARGS = {**ENV_ARGS,  'renderDepthImage':True}
+        self.ENV_ARGS = {**ENV_ARGS,  'renderDepthImage':False}
 
 
     @classmethod

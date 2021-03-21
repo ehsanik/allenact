@@ -61,8 +61,8 @@ class DisjointArmNavBaselineActorCritic(ActorCriticModel[CategoricalDistr]):
         self._hidden_size = hidden_size
         self.object_type_embedding_size = obj_state_embedding_size
 
-        self.visual_encoder_pick = SimpleCNN(self.observation_space, self._hidden_size, rgb_uuid='rgb_lowres', depth_uuid=None)
-        self.visual_encoder_drop = SimpleCNN(self.observation_space, self._hidden_size, rgb_uuid='rgb_lowres', depth_uuid=None)
+        self.visual_encoder_pick = SimpleCNN(self.observation_space, self._hidden_size, rgb_uuid=None, depth_uuid='depth_lowres')
+        self.visual_encoder_drop = SimpleCNN(self.observation_space, self._hidden_size, rgb_uuid=None, depth_uuid='depth_lowres')
 
         self.state_encoder = RNNStateEncoder(
             (self._hidden_size) + obj_state_embedding_size,

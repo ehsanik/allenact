@@ -21,7 +21,7 @@ import torch.nn as nn
 from projects.armnav_baselines.models.arm_nav_models import ArmNavBaselineActorCritic
 
 
-class BlindRandomAgentLocWDoneArmNav(
+class RealBlindRandomAgentLocWDoneArmNav(
     ArmNaviThorBaseConfig, ArmNavMixInPPOConfig, ArmNavMixInSimpleGRUConfig,
 ):
     """An Object Navigation experiment configuration in iThor with RGB
@@ -41,8 +41,8 @@ class BlindRandomAgentLocWDoneArmNav(
     ]
 
     MAX_STEPS = 200
-    # TASK_SAMPLER = RandomAgentWDoneActionTaskSampler #TODO
-    TASK_SAMPLER = WDoneActionTaskSampler
+    TASK_SAMPLER = RandomAgentWDoneActionTaskSampler #
+    # TASK_SAMPLER = WDoneActionTaskSampler
 
 
     def __init__(self):
