@@ -21,7 +21,7 @@ import torch.nn as nn
 from projects.armnav_baselines.models.arm_nav_models import ArmNavBaselineActorCritic
 
 
-class RandomAgentLocWDoneDepthArmNav(
+class RealDepthRandomAgentLocArmNav(
     ArmNaviThorBaseConfig, ArmNavMixInPPOConfig, ArmNavMixInSimpleGRUConfig,
 ):
     """An Object Navigation experiment configuration in iThor with RGB

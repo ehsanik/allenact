@@ -12,7 +12,7 @@ class ArmNaviThorBaseConfig(ArmNavThorBaseConfig, ABC):
     """The base config for all iTHOR ObjectNav experiments."""
 
     NUM_PROCESSES = 40
-    #TODO add all the arguments here
+    # add all the arguments here
     TOTAL_NUMBER_SCENES = 30
 
     TRAIN_SCENES = ["FloorPlan{}_physics".format(str(i)) for i in range(1, TOTAL_NUMBER_SCENES + 1) if (i % 3 == 1 or i % 3 == 0) and i != 28] # last scenes are really bad

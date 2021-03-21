@@ -70,7 +70,7 @@ class RolloutStorage(object):
             self.actions = self.actions.long()
             self.prev_actions = self.prev_actions.long()
 
-        self.masks = torch.ones(num_steps + 1, num_samplers, self.num_agents, 1,)
+        self.masks = torch.zeros(num_steps + 1, num_samplers, self.num_agents, 1,)
 
         self.step = 0
 
