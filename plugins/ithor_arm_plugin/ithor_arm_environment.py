@@ -190,7 +190,13 @@ class IThorMidLevelEnvironment(IThorEnvironment):
             scene_name = self.controller.last_event.metadata["sceneName"]
         # self.reset_init_params()#**kwargs) TODO does removing this fixes the problem?
 
-        reset_environment_and_additional_commands(self.controller, scene_name)
+        #TODO try to solve the crash issue
+        try:
+            reset_environment_and_additional_commands(self.controller, scene_name)
+        except Exception:
+            print('OH NO IT FAILED RESETTING THE SCENE,', scene_name)
+            self.controller = ai2thor.controller.Controller(**self.env_args)
+            reset_environment_and_additional_commands(self.controller, scene_name)
 
         if self.object_open_speed != 1.0:
             self.controller.step(
