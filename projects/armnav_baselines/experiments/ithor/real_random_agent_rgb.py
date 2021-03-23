@@ -31,7 +31,7 @@ class RealRGBRandomAgentLocWDoneArmNav(
         RGBSensorThor(
             height=ArmNaviThorBaseConfig.SCREEN_SIZE,
             width=ArmNaviThorBaseConfig.SCREEN_SIZE,
-            use_resnet_normalization=False,
+            use_resnet_normalization=True,
             uuid="rgb_lowres",
         ),
         # GoalObjectTypeThorSensor(object_types=ArmNaviThorBaseConfig.OBJECT_TYPES,),
@@ -49,7 +49,7 @@ class RealRGBRandomAgentLocWDoneArmNav(
         super().__init__()
 
         assert self.CAMERA_WIDTH == 224 and self.CAMERA_HEIGHT == 224 and self.VISIBILITY_DISTANCE == 1 and self.STEP_SIZE == 0.25
-        self.ENV_ARGS = {**ENV_ARGS,  'renderDepthImage':False}
+        self.ENV_ARGS = {**ENV_ARGS}#,  'renderDepthImage':False}
 
 
 

@@ -31,7 +31,7 @@ class RGBNOTRandomAgentLocWDoneArmNav(
         RGBSensorThor(
             height=ArmNaviThorBaseConfig.SCREEN_SIZE,
             width=ArmNaviThorBaseConfig.SCREEN_SIZE,
-            use_resnet_normalization=False,
+            use_resnet_normalization=True,
             uuid="rgb_lowres",
         ),
         # GoalObjectTypeThorSensor(object_types=ArmNaviThorBaseConfig.OBJECT_TYPES,),

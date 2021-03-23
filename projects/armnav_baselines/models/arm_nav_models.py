@@ -153,6 +153,18 @@ class ArmNavBaselineActorCritic(ActorCriticModel[CategoricalDistr]):
 
         perception_embed = self.visual_encoder(observations)
 
+        # ForkedPdb().set_trace() # remove
+        # image = observations['rgb_lowres'] # it seems like the rgb is not normalized
+        # depth = observations['depth_lowres']
+        # image = image.squeeze()
+        # depth = depth.squeeze()
+        # import matplotlib.pyplot as plt
+        # plt.imshow(image)
+        # plt.savefig('image.png')
+        # plt.cla()
+        # plt.imshow(depth)
+        # plt.savefig('depth.png')
+
         pickup_bool = (observations['pickedup_object'])
         before_pickup = pickup_bool == 0 #not used because of our initialization
         after_pickup = pickup_bool == 1

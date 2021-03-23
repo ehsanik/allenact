@@ -418,6 +418,8 @@ class NoDisturbWDoneActionTask(WDoneActionTask):
     def __init__(self, **kwargs):
         super(NoDisturbWDoneActionTask, self).__init__(**kwargs)
         self.previous_object_metadata = self.env.get_current_object_locations()
+        print('Seems like this does not work, check todos')
+        ForkedPdb().set_trace()
     def judge(self) -> float:
         """Compute the reward after having taken a step."""
         reward = super(NoDisturbWDoneActionTask, self).judge()
@@ -426,7 +428,7 @@ class NoDisturbWDoneActionTask(WDoneActionTask):
         num_moved_objects = len(objects_moved)
         if self.task_info['objectId'] in objects_moved:
             num_moved_objects -= 1
-        reward += self.reward_configs['failed_action_penalty'] #* num_moved_objects #TODO is this a good reward? or should we only penalize it once?
+        reward += self.reward_configs['failed_action_penalty'] #* num_moved_objects #LATER_TODO is this a good reward? or should we only penalize it once?
         self.previous_object_metadata = self.env.get_current_object_locations()
 
         return float(reward)

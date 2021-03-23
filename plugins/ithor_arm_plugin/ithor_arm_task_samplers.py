@@ -467,12 +467,13 @@ class RandomAgentWDoneActionTaskSampler(WDoneActionTaskSampler):
         else: # we need to fix this for test set, agent init location needs to be fixed, therefore we load a fixed valid agent init that is previously randomized
             result = self.deterministic_data_list[self.sampler_index]['datapoint']
             # ForkedPdb().set_trace()
-            self.sampler_index += 1
+
             scene_name = self.deterministic_data_list[self.sampler_index]['scene']
             datapoint_original_index = self.deterministic_data_list[self.sampler_index]['index']
             selected_agent_init_loc = self.possible_agent_reachable_poses[scene_name][datapoint_original_index]
             initial_agent_pose = {'name': 'agent', 'position': {'x': selected_agent_init_loc['x'], 'y': selected_agent_init_loc['y'], 'z': selected_agent_init_loc['z']}, 'rotation': {'x': -0.0, 'y': selected_agent_init_loc['rotation'], 'z': 0.0}, 'cameraHorizon': selected_agent_init_loc['horizon'], 'isStanding': True}
             result[0]['initial_agent_pose'] = initial_agent_pose
+            self.sampler_index += 1
 
         return result
 

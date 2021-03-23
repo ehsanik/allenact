@@ -18,27 +18,16 @@ from projects.armnav_baselines.experiments.armnav_mixin_simplegru import (
 )
 import torch.nn as nn
 
+from projects.armnav_baselines.experiments.ithor.real_random_agent_depth import RealDepthRandomAgentLocArmNav
 from projects.armnav_baselines.models.arm_nav_models import ArmNavBaselineActorCritic
 
 
-class RealDepthRandomAgentLocArmNav(
-    ArmNaviThorBaseConfig, ArmNavMixInPPOConfig, ArmNavMixInSimpleGRUConfig,
+class TestOnUObjSSceneRealDepthRandomAgentLocArmNav(
+    RealDepthRandomAgentLocArmNav
 ):
     """An Object Navigation experiment configuration in iThor with RGB
     input."""
 
-    SENSORS = [
-        DepthSensorThor(
-            height=ArmNaviThorBaseConfig.SCREEN_SIZE,
-            width=ArmNaviThorBaseConfig.SCREEN_SIZE,
-            use_normalization=True,
-            uuid="depth_lowres",
-        ),
-        # GoalObjectTypeThorSensor(object_types=ArmNaviThorBaseConfig.OBJECT_TYPES,),
-        RelativeAgentArmToObjectSensor(),
-        RelativeObjectToGoalSensor(),
-        PickedUpObjSensor(),
-    ]
 
     MAX_STEPS = 200
     TASK_SAMPLER = RandomAgentWDoneActionTaskSampler
@@ -47,14 +36,3 @@ class RealDepthRandomAgentLocArmNav(
     # TASK_SAMPLER  =WDoneActionTaskSampler
 
 
-    def __init__(self):
-        super().__init__()
-
-        assert self.CAMERA_WIDTH == 224 and self.CAMERA_HEIGHT == 224 and self.VISIBILITY_DISTANCE == 1 and self.STEP_SIZE == 0.25
-        self.ENV_ARGS = {**ENV_ARGS,  'renderDepthImage':True}
-
-
-
-    @classmethod
-    def tag(cls):
-        return cls.__name__
