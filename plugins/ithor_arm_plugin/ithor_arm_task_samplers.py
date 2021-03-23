@@ -184,15 +184,6 @@ class PickupDropOffGeneralSampler(MidLevelArmTaskSampler):
             print('We are doing cap training!!!')
             ForkedPdb().set_trace()
             # To be consistent across runs
-            random.seed(0)
-            for countertop_obj in self.countertop_object_to_data_id.keys():
-                all_sequence = self.countertop_object_to_data_id[countertop_obj]
-                count_to_keep = int(len(all_sequence) * self.cap_training)
-                if count_to_keep <= 2:
-                    count_to_keep = len(all_sequence)
-                all_sequence = random.sample(all_sequence, count_to_keep)
-                self.countertop_object_to_data_id[countertop_obj] = all_sequence
-
 
 
         print('Len dataset', len(self.all_possible_points), 'total_remained', sum([len(v) for v in self.countertop_object_to_data_id.values()]))
@@ -208,13 +199,12 @@ class PickupDropOffGeneralSampler(MidLevelArmTaskSampler):
                     except Exception:
                         print('Failed to load', valid_position_adr)
                         continue
-                    visible_data = [data for data in data_points[scene]]
+                    visible_data = [dict(scene=scene, index=i, datapoint=data) for (i,data) in enumerate(data_points[scene])]
                     self.deterministic_data_list += visible_data
 
                     # [v[0]['countertop_id'] for v in visible_data]
 
         if self.sampler_mode == 'test':
-            #TODO we should not do this here
             random.shuffle(self.deterministic_data_list)
             # very patched up
             self.max_tasks = self.reset_tasks = len(self.deterministic_data_list)
@@ -335,7 +325,7 @@ class PickupDropOffGeneralSampler(MidLevelArmTaskSampler):
             indices = random.sample(self.countertop_object_to_data_id[countertop_id], 2)
             result = self.all_possible_points[indices[0]],self.all_possible_points[indices[1]]
         else:
-            result = self.deterministic_data_list[self.sampler_index]
+            result = self.deterministic_data_list[self.sampler_index]['datapoint']
             # ForkedPdb().set_trace()
             self.sampler_index += 1
 
@@ -375,7 +365,10 @@ class RandomAgentWDoneActionTaskSampler(WDoneActionTaskSampler):
     ) -> None:
 
         super(RandomAgentWDoneActionTaskSampler, self).__init__(**kwargs)
-        with open('datasets/ithor-armnav/valid_agent_initial_locations.json') as f:
+        possible_initial_locations = 'datasets/ithor-armnav/valid_agent_initial_locations.json'
+        if self.sampler_mode == 'test':
+            possible_initial_locations = 'datasets/ithor-armnav/deterministic_valid_agent_initial_locations.json'
+        with open(possible_initial_locations) as f:
             self.possible_agent_reachable_poses = json.load(f)
 
     def next_task(self, force_advance_scene: bool = False) -> Optional[PickUpDropOffTask]:
@@ -471,12 +464,13 @@ class RandomAgentWDoneActionTaskSampler(WDoneActionTaskSampler):
             selected_agent_init_loc = random.choice(self.possible_agent_reachable_poses[scene_name])
             initial_agent_pose = {'name': 'agent', 'position': {'x': selected_agent_init_loc['x'], 'y': selected_agent_init_loc['y'], 'z': selected_agent_init_loc['z']}, 'rotation': {'x': -0.0, 'y': selected_agent_init_loc['rotation'], 'z': 0.0}, 'cameraHorizon': selected_agent_init_loc['horizon'], 'isStanding': True}
             result[0]['initial_agent_pose'] = initial_agent_pose
-        else: #TODO we need to fix this for test set, agent init location needs to be fixed
-            result = self.deterministic_data_list[self.sampler_index]
+        else: # we need to fix this for test set, agent init location needs to be fixed, therefore we load a fixed valid agent init that is previously randomized
+            result = self.deterministic_data_list[self.sampler_index]['datapoint']
             # ForkedPdb().set_trace()
             self.sampler_index += 1
-            scene_name = result[0]['scene_name']
-            selected_agent_init_loc = random.choice(self.possible_agent_reachable_poses[scene_name])
+            scene_name = self.deterministic_data_list[self.sampler_index]['scene']
+            datapoint_original_index = self.deterministic_data_list[self.sampler_index]['index']
+            selected_agent_init_loc = self.possible_agent_reachable_poses[scene_name][datapoint_original_index]
             initial_agent_pose = {'name': 'agent', 'position': {'x': selected_agent_init_loc['x'], 'y': selected_agent_init_loc['y'], 'z': selected_agent_init_loc['z']}, 'rotation': {'x': -0.0, 'y': selected_agent_init_loc['rotation'], 'z': 0.0}, 'cameraHorizon': selected_agent_init_loc['horizon'], 'isStanding': True}
             result[0]['initial_agent_pose'] = initial_agent_pose
 
