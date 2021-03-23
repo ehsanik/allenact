@@ -50,15 +50,6 @@ class DepthNOTRandomAgentLocWDoneDepthArmNav(
         assert self.CAMERA_WIDTH == 224 and self.CAMERA_HEIGHT == 224 and self.VISIBILITY_DISTANCE == 1 and self.STEP_SIZE == 0.25
         self.ENV_ARGS = {**ENV_ARGS,  'renderDepthImage':True}
 
-
-    @classmethod
-    def create_model(cls, **kwargs) -> nn.Module:
-        return ArmNavBaselineActorCritic(
-            action_space=gym.spaces.Discrete(len(WDoneActionTask.class_action_names())),
-            observation_space=kwargs["sensor_preprocessor_graph"].observation_spaces,
-            hidden_size=512,
-        )
-
     @classmethod
     def tag(cls):
         return cls.__name__

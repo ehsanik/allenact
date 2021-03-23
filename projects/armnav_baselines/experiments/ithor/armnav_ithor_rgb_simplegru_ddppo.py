@@ -33,7 +33,6 @@ class ArmNaviThorRGBPPOExperimentConfig(
 
     MAX_STEPS = 200
 
-
     @classmethod
     def tag(cls):
         return cls.__name__

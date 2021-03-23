@@ -13,9 +13,13 @@ from plugins.ithor_arm_plugin.arm_calculation_utils import initialize_arm, is_ob
 
 SCENES = ["FloorPlan{}_physics".format(str(i + 1)) for i in range(30)]
 
-OBJECTS = TRAIN_OBJECTS # + TEST_OBJECTS#
-# OBJECTS = TEST_OBJECTS
+OBJECTS_TO_WORK = TRAIN_OBJECTS # + TEST_OBJECTS#
+# OBJECTS_TO_WORK = TEST_OBJECTS
 
+SOURCE_VERSION = "pruned_v2_"
+PRUNED_VERSION = "pruned_v3_"
+
+assert SOURCE_VERSION != PRUNED_VERSION
 
 def test_initial_location(controller):
     for s in SCENES:
@@ -23,13 +27,15 @@ def test_initial_location(controller):
         event1, event2, event3 = initialize_arm(controller)
         if not (event1.metadata['lastActionSuccess'] and event2.metadata['lastActionSuccess'] and event3.metadata['lastActionSuccess']):
             return False, 'failed for {}'.format(s)
+
     return True, ''
 
 def check_datapoint_correctness(controller, source_location):
     scene = source_location['scene_name']
     reset_environment_and_additional_commands(controller, scene)
-    event_place_obj = transport_wrapper(controller, source_location['object_id'], source_location['object_location'])
     _1, _2, _3 = initialize_arm(controller) #This is checked before
+    event_place_obj = transport_wrapper(controller, source_location['object_id'], source_location['object_location'])
+    # _1, _2, _3 = initialize_arm(controller) #This is checked before
     agent_state = source_location['agent_pose']
     teleport_detail = dict(action='TeleportFull', standing=True, x=agent_state['position']['x'], y=agent_state['position']['y'], z=agent_state['position']['z'], rotation=dict(x=agent_state['rotation']['x'], y=agent_state['rotation']['y'], z=agent_state['rotation']['z']), horizon=agent_state['cameraHorizon'])
     event_TeleportFull = controller.step(teleport_detail)
@@ -61,15 +67,15 @@ def check_datapoint_correctness(controller, source_location):
         return False, error_reasons
         # return False, 'Data point invalid for {}, because of event_place_obj {}, event_TeleportFull{}, object_is_visible {}'.format(source_location, event_place_obj, event_TeleportFull, object_is_visible)
 
-def test_train_data_points(controller):
+def test_train_data_points(controller, object_names):
     total_checked = 0
     total_error = 0
     total_reasons = {}
     for s in SCENES:
-        for o in OBJECTS:
+        for o in object_names:
             print('Testing ', s, o)
 
-            with open('datasets/ithor-armnav/valid_{}_positions_in_{}.json'.format(o, s)) as f:
+            with open('datasets/ithor-armnav/{}valid_{}_positions_in_{}.json'.format(SOURCE_VERSION, o, s)) as f:
                 data_points = json.load(f)
             visible_data = [data for data in data_points[s] if data['visibility']]
             for datapoint in visible_data:
@@ -87,11 +93,16 @@ def test_train_data_points(controller):
     return True, ''
 
 
-def prune_data_points(controller):
+def prune_data_points(controller, object_names):
     for s in SCENES:
-        for o in OBJECTS:
+        for o in object_names:
             print('Pruning ', s, o)
-            with open('datasets/ithor-armnav/valid_{}_positions_in_{}.json'.format(o, s)) as f:
+            pruned_version_name = 'datasets/ithor-armnav/{}valid_{}_positions_in_{}.json'.format(PRUNED_VERSION, o, s)
+            if os.path.exists(pruned_version_name):
+                print('This file exists')
+                pdb.set_trace()
+
+            with open('datasets/ithor-armnav/{}valid_{}_positions_in_{}.json'.format(SOURCE_VERSION, o, s)) as f:
                 data_points = json.load(f)
             visible_data = [data for data in data_points[s] if data['visibility']]
             remaining_valid = []
@@ -102,13 +113,14 @@ def prune_data_points(controller):
                 if result:
                     remaining_valid.append(datapoint)
             print('out of ', len(visible_data), 'remained', len(remaining_valid))
-            with open('datasets/ithor-armnav/pruned_v2_valid_{}_positions_in_{}.json'.format(o, s), 'w') as f:
+
+            with open(pruned_version_name, 'w') as f:
                 json.dump({s: remaining_valid}, f)
 
 def parse_args():
     parser = argparse.ArgumentParser(description='Sync')
     parser.add_argument('--prune', default=False, action='store_true')
-
+    parser.add_argument('--test_objects', default=False, action='store_true')
 
     args = parser.parse_args()
     return args
@@ -116,6 +128,12 @@ def parse_args():
 
 if __name__ == '__main__':
     args = parse_args()
+
+
+    if args.test_objects:
+        object_names = TEST_OBJECTS
+    else:
+        object_names = OBJECTS_TO_WORK
 
     controller = ai2thor.controller.Controller(
         **ENV_ARGS
@@ -136,11 +154,11 @@ if __name__ == '__main__':
 
     if args.prune:
         print('Are you sure?')
-        prune_data_points(controller)
+        prune_data_points(controller, object_names)
     else:
 
         print('Testing test_train_data_points')
-        result, message = test_train_data_points(controller)
+        result, message = test_train_data_points(controller, object_names)
         if result:
             print('Passed')
         else:

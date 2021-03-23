@@ -3,7 +3,7 @@ import gym
 
 from plugins.ithor_arm_plugin.ithor_arm_constants import ENV_ARGS
 from plugins.ithor_arm_plugin.ithor_arm_sensors import RelativeAgentArmToObjectSensor, RelativeObjectToGoalSensor, PickedUpObjSensor, DepthSensorThor
-from plugins.ithor_arm_plugin.ithor_arm_task_samplers import RandomAgentWDoneActionTaskSampler, WDoneActionTaskSampler
+from plugins.ithor_arm_plugin.ithor_arm_task_samplers import RandomAgentWDoneActionTaskSampler, NoDisturbWDoneActionTaskSampler
 from plugins.ithor_arm_plugin.ithor_arm_tasks import PickUpDropOffTask, WDoneActionTask
 from plugins.ithor_plugin.ithor_sensors import RGBSensorThor
 
@@ -21,7 +21,7 @@ import torch.nn as nn
 from projects.armnav_baselines.models.arm_nav_models import ArmNavBaselineActorCritic
 
 
-class RealDepthRandomAgentLocArmNav(
+class NoDisturbDepthNOTRandomAgentLocWDoneDepthArmNav(
     ArmNaviThorBaseConfig, ArmNavMixInPPOConfig, ArmNavMixInSimpleGRUConfig,
 ):
     """An Object Navigation experiment configuration in iThor with RGB
@@ -41,8 +41,7 @@ class RealDepthRandomAgentLocArmNav(
     ]
 
     MAX_STEPS = 200
-    TASK_SAMPLER = RandomAgentWDoneActionTaskSampler
-    # TASK_SAMPLER  =WDoneActionTaskSampler
+    TASK_SAMPLER  = NoDisturbWDoneActionTaskSampler
 
 
     def __init__(self):
@@ -50,7 +49,6 @@ class RealDepthRandomAgentLocArmNav(
 
         assert self.CAMERA_WIDTH == 224 and self.CAMERA_HEIGHT == 224 and self.VISIBILITY_DISTANCE == 1 and self.STEP_SIZE == 0.25
         self.ENV_ARGS = {**ENV_ARGS,  'renderDepthImage':True}
-
 
 
     @classmethod

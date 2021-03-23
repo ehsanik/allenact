@@ -56,7 +56,7 @@ class RealDisjointDepthRandomAgentLocArmNav(
     @classmethod
     def create_model(cls, **kwargs) -> nn.Module:
         return DisjointArmNavBaselineActorCritic(
-            action_space=gym.spaces.Discrete(len(WDoneActionTask.class_action_names())),
+            action_space=gym.spaces.Discrete(len(cls.TASK_SAMPLER._TASK_TYPE.class_action_names())),
             observation_space=kwargs["sensor_preprocessor_graph"].observation_spaces,
             hidden_size=512,
         )

@@ -52,13 +52,5 @@ class BlindNOTRandomAgentLocWDoneArmNav(
 
 
     @classmethod
-    def create_model(cls, **kwargs) -> nn.Module:
-        return ArmNavBaselineActorCritic(
-            action_space=gym.spaces.Discrete(len(WDoneActionTask.class_action_names())),
-            observation_space=kwargs["sensor_preprocessor_graph"].observation_spaces,
-            hidden_size=512,
-        )
-
-    @classmethod
     def tag(cls):
         return cls.__name__

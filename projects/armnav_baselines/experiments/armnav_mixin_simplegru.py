@@ -48,7 +48,7 @@ class ArmNavMixInSimpleGRUConfig(ArmNavBaseConfig):
         )
 
         return ArmNavBaselineActorCritic(
-            action_space=gym.spaces.Discrete(len(PickUpDropOffTask.class_action_names())),
+            action_space=gym.spaces.Discrete(len(cls.TASK_SAMPLER._TASK_TYPE.class_action_names())),
             observation_space=kwargs["sensor_preprocessor_graph"].observation_spaces,
             # goal_sensor_uuid=goal_sensor_uuid,
             # rgb_uid="rgb_uid" if has_rgb else None,
@@ -56,3 +56,4 @@ class ArmNavMixInSimpleGRUConfig(ArmNavBaseConfig):
             hidden_size=512,
             # goal_dims=32,
         )
+

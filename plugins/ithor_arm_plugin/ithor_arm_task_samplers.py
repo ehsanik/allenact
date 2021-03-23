@@ -10,7 +10,7 @@ import gym
 from core.base_abstractions.task import Task
 from plugins.ithor_arm_plugin.arm_calculation_utils import initialize_arm
 
-from plugins.ithor_arm_plugin.ithor_arm_tasks import PickUpDropOffTask, WDoneActionTask
+from plugins.ithor_arm_plugin.ithor_arm_tasks import PickUpDropOffTask, WDoneActionTask, NoDisturbWDoneActionTask, EfficientWDoneActionTask
 from plugins.ithor_arm_plugin.ithor_arm_environment import IThorMidLevelEnvironment
 from core.base_abstractions.sensor import Sensor
 from core.base_abstractions.task import TaskSampler
@@ -77,8 +77,8 @@ class MidLevelArmTaskSampler(TaskSampler):
         self.cap_training = kwargs['cap_training']
 
 
-        if self.sampler_mode == 'test':
-            self.visualizers.append(TestMetricLogger(exp_name=kwargs['exp_name']))
+        # if self.sampler_mode == 'test':
+        #     self.visualizers.append(TestMetricLogger(exp_name=kwargs['exp_name']))
 
 
 
@@ -214,6 +214,7 @@ class PickupDropOffGeneralSampler(MidLevelArmTaskSampler):
                     # [v[0]['countertop_id'] for v in visible_data]
 
         if self.sampler_mode == 'test':
+            #TODO we should not do this here
             random.shuffle(self.deterministic_data_list)
             # very patched up
             self.max_tasks = self.reset_tasks = len(self.deterministic_data_list)
@@ -226,7 +227,7 @@ class PickupDropOffGeneralSampler(MidLevelArmTaskSampler):
         if self.max_tasks is not None and self.max_tasks <= 0:
             return None
 
-        if self.sampler_mode != 'train' and self.length <= 0: #TODO I added this but why?
+        if self.sampler_mode != 'train' and self.length <= 0: #LUCA_TODO I added this but why?
             return None
 
 
@@ -245,6 +246,11 @@ class PickupDropOffGeneralSampler(MidLevelArmTaskSampler):
 
         self.env.reset(scene_name=scene, agentMode="arm", agentControllerType="mid-level")
 
+        event1, event2, event3 = initialize_arm(self.env.controller)
+
+        if not(event1.metadata['lastActionSuccess'] and event2.metadata['lastActionSuccess'] and event3.metadata['lastActionSuccess']):
+            print('ERROR: ARM MOVEMENT FAILED! SHOULD NEVER HAPPEN')
+
         source_location = source_data_point
         target_location = dict(position=target_data_point['object_location'], rotation = {'x':0, 'y':0, 'z':0})
 
@@ -260,21 +266,20 @@ class PickupDropOffGeneralSampler(MidLevelArmTaskSampler):
 
         event = transport_wrapper(this_controller, source_location['object_id'], source_location['object_location'])
         if event.metadata['lastActionSuccess'] == False:
-            print('oh no could not transport')
+            print('ERROR: oh no could not transport')
         agent_state = source_location['agent_pose']
 
+        # event1, event2, event3 = initialize_arm(this_controller)
 
-        event1, event2, event3 = initialize_arm(this_controller)
-
-        if not(event1.metadata['lastActionSuccess'] and event2.metadata['lastActionSuccess'] and event3.metadata['lastActionSuccess']):
-            print('ARM MOVEMENT FAILED> SHOUD NEVER HAPPEN')
-            # print('scene', scene, initial_pose, ADITIONAL_ARM_ARGS)
-            # print(event1.metadata['actionReturn'] , event2.metadata['actionReturn'] , event3.metadata['actionReturn'])
+        # if not(event1.metadata['lastActionSuccess'] and event2.metadata['lastActionSuccess'] and event3.metadata['lastActionSuccess']):
+        #     print('ARM MOVEMENT FAILED> SHOUD NEVER HAPPEN')
+        #     # print('scene', scene, initial_pose, ADITIONAL_ARM_ARGS)
+        #     # print(event1.metadata['actionReturn'] , event2.metadata['actionReturn'] , event3.metadata['actionReturn'])
 
 
         event = this_controller.step(dict(action='TeleportFull', standing=True, x=agent_state['position']['x'], y=agent_state['position']['y'], z=agent_state['position']['z'], rotation=dict(x=agent_state['rotation']['x'], y=agent_state['rotation']['y'], z=agent_state['rotation']['z']), horizon=agent_state['cameraHorizon']))
         if event.metadata['lastActionSuccess'] == False:
-            print('oh no could not teleport')
+            print('ERROR: oh no could not teleport')
 
         # remove this
         if self.env._verbose:
@@ -360,6 +365,9 @@ class PickupDropOffGeneralSampler(MidLevelArmTaskSampler):
 class WDoneActionTaskSampler(PickupDropOffGeneralSampler):
     _TASK_TYPE = WDoneActionTask
 
+class NoDisturbWDoneActionTaskSampler(WDoneActionTaskSampler):
+    _TASK_TYPE = NoDisturbWDoneActionTask
+
 class RandomAgentWDoneActionTaskSampler(WDoneActionTaskSampler):
     def __init__(
             self,
@@ -374,7 +382,7 @@ class RandomAgentWDoneActionTaskSampler(WDoneActionTaskSampler):
         if self.max_tasks is not None and self.max_tasks <= 0:
             return None
 
-        if self.sampler_mode != 'train' and self.length <= 0: #TODO I added this but why?
+        if self.sampler_mode != 'train' and self.length <= 0: #LUCA_TODO I added this but why?
             return None
 
 
@@ -393,6 +401,10 @@ class RandomAgentWDoneActionTaskSampler(WDoneActionTaskSampler):
 
         self.env.reset(scene_name=scene, agentMode="arm", agentControllerType="mid-level")
 
+        event1, event2, event3 = initialize_arm(self.env.controller)
+        if not(event1.metadata['lastActionSuccess'] and event2.metadata['lastActionSuccess'] and event3.metadata['lastActionSuccess']):
+            print('ERROR: ARM MOVEMENT FAILED! SHOULD NEVER HAPPEN')
+
         source_location = source_data_point
         target_location = dict(position=target_data_point['object_location'], rotation = {'x':0, 'y':0, 'z':0})
 
@@ -408,23 +420,23 @@ class RandomAgentWDoneActionTaskSampler(WDoneActionTaskSampler):
 
         event = transport_wrapper(this_controller, source_location['object_id'], source_location['object_location'])
         if event.metadata['lastActionSuccess'] == False:
-            print('oh no could not transport')
+            print('ERROR: oh no could not transport')
 
 
         agent_state = source_location['initial_agent_pose'] # THe only line different from father
 
 
-        event1, event2, event3 = initialize_arm(this_controller)
+        # event1, event2, event3 = initialize_arm(this_controller) # moved this up
 
-        if not(event1.metadata['lastActionSuccess'] and event2.metadata['lastActionSuccess'] and event3.metadata['lastActionSuccess']):
-            print('ARM MOVEMENT FAILED> SHOUD NEVER HAPPEN')
+        # if not(event1.metadata['lastActionSuccess'] and event2.metadata['lastActionSuccess'] and event3.metadata['lastActionSuccess']):
+        #     print('ARM MOVEMENT FAILED> SHOUD NEVER HAPPEN')
             # print('scene', scene, initial_pose, ADITIONAL_ARM_ARGS)
             # print(event1.metadata['actionReturn'] , event2.metadata['actionReturn'] , event3.metadata['actionReturn'])
 
 
         event = this_controller.step(dict(action='TeleportFull', standing=True, x=agent_state['position']['x'], y=agent_state['position']['y'], z=agent_state['position']['z'], rotation=dict(x=agent_state['rotation']['x'], y=agent_state['rotation']['y'], z=agent_state['rotation']['z']), horizon=agent_state['cameraHorizon']))
         if event.metadata['lastActionSuccess'] == False:
-            print('oh no could not teleport')
+            print('ERROR: oh no could not teleport')
 
         # remove this
         if self.env._verbose:
@@ -469,6 +481,10 @@ class RandomAgentWDoneActionTaskSampler(WDoneActionTaskSampler):
             result[0]['initial_agent_pose'] = initial_agent_pose
 
         return result
+
+
+class GoodFPSRandomAgentWDoneActionTaskSampler(RandomAgentWDoneActionTaskSampler):
+    _TASK_TYPE = EfficientWDoneActionTask
 
 def get_all_tuples_from_list(list):
     result = []

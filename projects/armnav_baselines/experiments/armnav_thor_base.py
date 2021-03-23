@@ -119,6 +119,7 @@ class ArmNavThorBaseConfig(ArmNavBaseConfig, ABC):
         if cls.VISUALIZE:
             visualizers = [
                 ImageVisualizer(exp_name=exp_name_w_time),
+                TestMetricLogger(exp_name=exp_name_w_time)
             ]
 
             kwargs['visualizers'] = visualizers
