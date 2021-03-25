@@ -49,8 +49,11 @@ def sync_back(args):
     for server in args.servers:
         print('syncing from ', server)
         command = 'rsync  -avz \
-             --exclude ImageVisualizer/ \
+             --exclude *.png \
+             --exclude *.gif \
              {}:~/allenact/experiment_output/visualizations ~/Desktop/server_results_sync/{}'.format(server, server)
+
+        # rsync -avz --exclude "*.png" vision-server12:~/allenact/experiment_output/visualizations/RealDepthRandomAgentLocArmNav_03_24_2021_17_46_17_098605/ depth_visualizations
 
         if args.sync_weights:
             command = command.replace('--exclude ImageVisualizer/ ', '')

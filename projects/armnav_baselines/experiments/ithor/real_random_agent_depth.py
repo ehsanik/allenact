@@ -44,6 +44,11 @@ class RealDepthRandomAgentLocArmNav(
     TASK_SAMPLER = RandomAgentWDoneActionTaskSampler
     # TASK_SAMPLER  =WDoneActionTaskSampler
 
+    # # remove
+    # VISUALIZE = True
+    # NUM_PROCESSES = 1
+    # NUMBER_OF_TEST_PROCESS = 1
+
 
     def __init__(self):
         super().__init__()

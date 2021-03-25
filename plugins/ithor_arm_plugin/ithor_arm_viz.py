@@ -116,9 +116,10 @@ class ImageVisualizer(LoggerVisualizer):
         pickup_success = episode_info.object_picked_up
         episode_success = episode_info._success
 
-        for i, img in enumerate(self.log_queue):
-            image_dir = os.path.join(self.log_dir, time_to_write + '_seq{}.png'.format(str(i)))
-            cv2.imwrite(image_dir, img[:,:,[2,1,0]])
+        #Put back if you want the images
+        # for i, img in enumerate(self.log_queue):
+        #     image_dir = os.path.join(self.log_dir, time_to_write + '_seq{}.png'.format(str(i)))
+        #     cv2.imwrite(image_dir, img[:,:,[2,1,0]])
 
         episode_success_offset = 'succ' if episode_success else 'fail'
         pickup_success_offset = 'succ' if pickup_success else 'fail'
@@ -183,6 +184,8 @@ class ThirdViewVisualizer(LoggerVisualizer):
 
     def __init__(self):
         super(ThirdViewVisualizer, self).__init__()
+        print('This does not work')
+        ForkedPdb().set_trace()
         # self.init_camera = False
 
 

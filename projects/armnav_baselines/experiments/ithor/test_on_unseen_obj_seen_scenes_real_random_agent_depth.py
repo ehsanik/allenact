@@ -33,6 +33,10 @@ class TestOnUObjSSceneRealDepthRandomAgentLocArmNav(
     TASK_SAMPLER = RandomAgentWDoneActionTaskSampler
     TEST_SCENES = ArmNaviThorBaseConfig.TRAIN_SCENES
     OBJECT_TYPES = ArmNaviThorBaseConfig.UNSEEN_OBJECT_TYPES
+    # remove
+    # VISUALIZE = True
+    # NUM_PROCESSES = 1
+    # NUMBER_OF_TEST_PROCESS = 1
     # TASK_SAMPLER  =WDoneActionTaskSampler
 
 
