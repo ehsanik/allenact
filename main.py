@@ -152,7 +152,7 @@ def get_args():
     )
     parser.set_defaults(disable_tensorboard=False)
 
-    parser.add_argument( #TODO luca search for all LUCA_TODO
+    parser.add_argument(
         "--mode", type=str, default='train', choices=['train', 'test'],
     )
 
@@ -272,8 +272,6 @@ def main():
 
     cfg, srcs = load_config(args)
 
-    # if args.test_date is None:
-    #LUCA_TODO TODO Luca
     if args.mode == 'train':
         OnPolicyRunner(
             config=cfg,
@@ -293,9 +291,6 @@ def main():
         )
     elif args.mode == 'test':
 
-        #LUCA_TODO TODO make sure we are loading the model correctly
-
-        #LUCA_TODO TODO luca
         if args.test_date is None:
             args.test_date = '2000-01-01_01-01-01'
 

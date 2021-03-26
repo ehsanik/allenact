@@ -2,26 +2,20 @@ import copy
 import json
 import random
 from typing import List, Dict, Optional, Any, Union
-
-
-import cv2
 import gym
-
 from core.base_abstractions.task import Task
 from plugins.ithor_arm_plugin.arm_calculation_utils import initialize_arm
 
-from plugins.ithor_arm_plugin.ithor_arm_tasks import PickUpDropOffTask, WDoneActionTask, NoDisturbWDoneActionTask, EfficientWDoneActionTask
+from plugins.ithor_arm_plugin.ithor_arm_tasks import AbstractPickUpDropOffTask, WDoneActionTask
 from plugins.ithor_arm_plugin.ithor_arm_environment import IThorMidLevelEnvironment
 from core.base_abstractions.sensor import Sensor
 from core.base_abstractions.task import TaskSampler
-from utils.debugger_util import ForkedPdb
 from utils.experiment_utils import set_deterministic_cudnn, set_seed
-from plugins.ithor_arm_plugin.ithor_arm_constants import scene_start_cheating_init_pose, ADITIONAL_ARM_ARGS, transport_wrapper
-from utils.system import get_logger
-from plugins.ithor_arm_plugin.ithor_arm_viz import LoggerVisualizer, TestMetricLogger, ImageVisualizer
+from plugins.ithor_arm_plugin.ithor_arm_constants import transport_wrapper
+from plugins.ithor_arm_plugin.ithor_arm_viz import LoggerVisualizer, ImageVisualizer
 
 
-class MidLevelArmTaskSampler(TaskSampler):
+class AbstractMidLevelArmTaskSampler(TaskSampler):
 
     _TASK_TYPE = Task
 
@@ -71,42 +65,20 @@ class MidLevelArmTaskSampler(TaskSampler):
         if deterministic_cudnn:
             set_deterministic_cudnn()
 
-        self.reset()# TODO this one
+        self.reset()
         self.visualizers = visualizers
         self.sampler_mode = kwargs['sampler_mode']
         self.cap_training = kwargs['cap_training']
-
-
-        # if self.sampler_mode == 'test':
-        #     self.visualizers.append(TestMetricLogger(exp_name=kwargs['exp_name']))
-
 
 
     def _create_environment(self, **kwargs) -> IThorMidLevelEnvironment:
         env = IThorMidLevelEnvironment(
             make_agents_visible=False,
             object_open_speed=0.05,
-            # restrict_to_initially_reachable_points=True, # is this really important?
-            env_args=self.env_args, #TODO why can't i do the same thing as the other task sampler?
+            env_args=self.env_args,
         )
 
         return env
-
-    # # remove these two
-    # @property
-    # def length(self) -> Union[int, float]:
-    #     """Length.
-    #
-    #     # Returns
-    #
-    #     Number of total tasks remaining that can be sampled. Can be float('inf').
-    #     """
-    #     return float("inf") if self.max_tasks is None else self.max_tasks
-    #
-    # @property
-    # def total_unique(self) -> Optional[Union[int, float]]:
-    #     # raise Exception('need to define this')
-    #     return None
 
     @property
     def last_sampled_task(self) -> Optional[Task]:
@@ -127,8 +99,6 @@ class MidLevelArmTaskSampler(TaskSampler):
         """
         return True
 
-    # def sample_scene(self, force_advance_scene: bool): Removed this because I can handle this
-
     def reset(self):
         self.scene_counter = 0
         self.scene_order = list(range(len(self.scenes)))
@@ -146,9 +116,9 @@ class MidLevelArmTaskSampler(TaskSampler):
 
 
 
-class PickupDropOffGeneralSampler(MidLevelArmTaskSampler):
+class PickupDropOffGeneralSampler(AbstractMidLevelArmTaskSampler):
 
-    _TASK_TYPE = PickUpDropOffTask
+    _TASK_TYPE = AbstractPickUpDropOffTask
 
     def __init__(
             self,
@@ -156,10 +126,7 @@ class PickupDropOffGeneralSampler(MidLevelArmTaskSampler):
     ) -> None:
 
         super(PickupDropOffGeneralSampler, self).__init__(**kwargs)
-        #LATER_TODO change this later
         self.all_possible_points = []
-
-
         for scene in self.scenes:
             for object in self.objects:
                 valid_position_adr = 'datasets/ithor-armnav/pruned_v2_valid_{}_positions_in_{}.json'.format(object, scene)
@@ -180,12 +147,6 @@ class PickupDropOffGeneralSampler(MidLevelArmTaskSampler):
             print('Not all scenes appear')
 
 
-        if self.cap_training is not None:
-            print('We are doing cap training!!!')
-            ForkedPdb().set_trace()
-            # To be consistent across runs
-
-
         print('Len dataset', len(self.all_possible_points), 'total_remained', sum([len(v) for v in self.countertop_object_to_data_id.values()]))
 
         if self.sampler_mode != 'train': # Be aware that this totally overrides some stuff
@@ -202,22 +163,16 @@ class PickupDropOffGeneralSampler(MidLevelArmTaskSampler):
                     visible_data = [dict(scene=scene, index=i, datapoint=data) for (i,data) in enumerate(data_points[scene])]
                     self.deterministic_data_list += visible_data
 
-                    # [v[0]['countertop_id'] for v in visible_data]
 
         if self.sampler_mode == 'test':
             random.shuffle(self.deterministic_data_list)
-            # very patched up
             self.max_tasks = self.reset_tasks = len(self.deterministic_data_list)
 
-
-
-
-
-    def next_task(self, force_advance_scene: bool = False) -> Optional[PickUpDropOffTask]:
+    def next_task(self, force_advance_scene: bool = False) -> Optional[AbstractPickUpDropOffTask]:
         if self.max_tasks is not None and self.max_tasks <= 0:
             return None
 
-        if self.sampler_mode != 'train' and self.length <= 0: #LUCA_TODO I added this but why?
+        if self.sampler_mode != 'train' and self.length <= 0:
             return None
 
 
@@ -229,17 +184,12 @@ class PickupDropOffGeneralSampler(MidLevelArmTaskSampler):
         assert source_data_point['object_id'] == target_data_point['object_id']
         assert source_data_point['scene_name'] == target_data_point['scene_name']
 
-
-
         if self.env is None:
             self.env = self._create_environment()
 
         self.env.reset(scene_name=scene, agentMode="arm", agentControllerType="mid-level")
 
         event1, event2, event3 = initialize_arm(self.env.controller)
-
-        if not(event1.metadata['lastActionSuccess'] and event2.metadata['lastActionSuccess'] and event3.metadata['lastActionSuccess']):
-            print('ERROR: ARM MOVEMENT FAILED! SHOULD NEVER HAPPEN')
 
         source_location = source_data_point
         target_location = dict(position=target_data_point['object_location'], rotation = {'x':0, 'y':0, 'z':0})
@@ -255,26 +205,9 @@ class PickupDropOffGeneralSampler(MidLevelArmTaskSampler):
         this_controller = self.env
 
         event = transport_wrapper(this_controller, source_location['object_id'], source_location['object_location'])
-        if event.metadata['lastActionSuccess'] == False:
-            print('ERROR: oh no could not transport')
         agent_state = source_location['agent_pose']
 
-        # event1, event2, event3 = initialize_arm(this_controller)
-
-        # if not(event1.metadata['lastActionSuccess'] and event2.metadata['lastActionSuccess'] and event3.metadata['lastActionSuccess']):
-        #     print('ARM MOVEMENT FAILED> SHOUD NEVER HAPPEN')
-        #     # print('scene', scene, initial_pose, ADITIONAL_ARM_ARGS)
-        #     # print(event1.metadata['actionReturn'] , event2.metadata['actionReturn'] , event3.metadata['actionReturn'])
-
-
         event = this_controller.step(dict(action='TeleportFull', standing=True, x=agent_state['position']['x'], y=agent_state['position']['y'], z=agent_state['position']['z'], rotation=dict(x=agent_state['rotation']['x'], y=agent_state['rotation']['y'], z=agent_state['rotation']['z']), horizon=agent_state['cameraHorizon']))
-        if event.metadata['lastActionSuccess'] == False:
-            print('ERROR: oh no could not teleport')
-
-        # remove this
-        if self.env._verbose:
-            print('task: ', task_info['objectId'], task_info['countertop_id'], 'source_location', task_info['source_location'], 'target_location', task_info['target_location'], )
-            print('counter_top_source', source_data_point['countertop_id'], 'counter_top_target', target_data_point['countertop_id'])
 
         should_visualize_goal_start = [x for x in self.visualizers if issubclass(type(x), ImageVisualizer)]
         if len(should_visualize_goal_start) > 0:
@@ -292,9 +225,6 @@ class PickupDropOffGeneralSampler(MidLevelArmTaskSampler):
             reward_configs=self.rewards_config,
         )
 
-
-        # if task_info['objectId'] == 'Bread|-00.52|+01.17|-00.03' and task_info['countertop_id'] == 'CounterTop|-01.87|+00.95|-01.21':
-        #     ForkedPdb().set_trace()
         return self._last_sampled_task
 
 
@@ -315,9 +245,6 @@ class PickupDropOffGeneralSampler(MidLevelArmTaskSampler):
         """
         return self.total_unique - self.sampler_index if self.sampler_mode != 'train' else (float("inf") if self.max_tasks is None else self.max_tasks)
 
-
-
-
     def get_source_target_indices(self):
         if self.sampler_mode == 'train':
             valid_countertops = [k for (k, v) in self.countertop_object_to_data_id.items() if len(v) > 1]
@@ -337,28 +264,14 @@ class PickupDropOffGeneralSampler(MidLevelArmTaskSampler):
         object_to_data_id = {}
 
         for i in range(len(all_possible_points)):
-            # countertop_id = all_possible_points[i]['countertop_id']
             object_id = all_possible_points[i]['object_id']
-            # counter_object = '{}_{}'.format(countertop_id, object_id)
-            # countertop_object_to_data_id.setdefault(counter_object, [])
-            # countertop_object_to_data_id[counter_object].append(i)
-            #
             object_to_data_id.setdefault(object_id, [])
             object_to_data_id[object_id].append(i)
 
         return object_to_data_id
 
-
-# class OnlyPickupGeneralSampler(PickupDropOffGeneralSampler):
-#     _TASK_TYPE = OnlyPickUpTask
-
-class WDoneActionTaskSampler(PickupDropOffGeneralSampler):
+class RandomAgentWDoneActionTaskSampler(PickupDropOffGeneralSampler):
     _TASK_TYPE = WDoneActionTask
-
-class NoDisturbWDoneActionTaskSampler(WDoneActionTaskSampler):
-    _TASK_TYPE = NoDisturbWDoneActionTask
-
-class RandomAgentWDoneActionTaskSampler(WDoneActionTaskSampler):
     def __init__(
             self,
             **kwargs
@@ -371,11 +284,11 @@ class RandomAgentWDoneActionTaskSampler(WDoneActionTaskSampler):
         with open(possible_initial_locations) as f:
             self.possible_agent_reachable_poses = json.load(f)
 
-    def next_task(self, force_advance_scene: bool = False) -> Optional[PickUpDropOffTask]:
+    def next_task(self, force_advance_scene: bool = False) -> Optional[AbstractPickUpDropOffTask]:
         if self.max_tasks is not None and self.max_tasks <= 0:
             return None
 
-        if self.sampler_mode != 'train' and self.length <= 0: #LUCA_TODO I added this but why?
+        if self.sampler_mode != 'train' and self.length <= 0:
             return None
 
 
@@ -395,8 +308,6 @@ class RandomAgentWDoneActionTaskSampler(WDoneActionTaskSampler):
         self.env.reset(scene_name=scene, agentMode="arm", agentControllerType="mid-level")
 
         event1, event2, event3 = initialize_arm(self.env.controller)
-        if not(event1.metadata['lastActionSuccess'] and event2.metadata['lastActionSuccess'] and event3.metadata['lastActionSuccess']):
-            print('ERROR: ARM MOVEMENT FAILED! SHOULD NEVER HAPPEN')
 
         source_location = source_data_point
         target_location = dict(position=target_data_point['object_location'], rotation = {'x':0, 'y':0, 'z':0})
@@ -412,29 +323,11 @@ class RandomAgentWDoneActionTaskSampler(WDoneActionTaskSampler):
         this_controller = self.env
 
         event = transport_wrapper(this_controller, source_location['object_id'], source_location['object_location'])
-        if event.metadata['lastActionSuccess'] == False:
-            print('ERROR: oh no could not transport')
-
 
         agent_state = source_location['initial_agent_pose'] # THe only line different from father
 
-
-        # event1, event2, event3 = initialize_arm(this_controller) # moved this up
-
-        # if not(event1.metadata['lastActionSuccess'] and event2.metadata['lastActionSuccess'] and event3.metadata['lastActionSuccess']):
-        #     print('ARM MOVEMENT FAILED> SHOUD NEVER HAPPEN')
-            # print('scene', scene, initial_pose, ADITIONAL_ARM_ARGS)
-            # print(event1.metadata['actionReturn'] , event2.metadata['actionReturn'] , event3.metadata['actionReturn'])
-
-
         event = this_controller.step(dict(action='TeleportFull', standing=True, x=agent_state['position']['x'], y=agent_state['position']['y'], z=agent_state['position']['z'], rotation=dict(x=agent_state['rotation']['x'], y=agent_state['rotation']['y'], z=agent_state['rotation']['z']), horizon=agent_state['cameraHorizon']))
-        if event.metadata['lastActionSuccess'] == False:
-            print('ERROR: oh no could not teleport')
 
-        # remove this
-        if self.env._verbose:
-            print('task: ', task_info['objectId'], task_info['countertop_id'], 'source_location', task_info['source_location'], 'target_location', task_info['target_location'], )
-            print('counter_top_source', source_data_point['countertop_id'], 'counter_top_target', target_data_point['countertop_id'])
 
         should_visualize_goal_start = [x for x in self.visualizers if issubclass(type(x), ImageVisualizer)]
         if len(should_visualize_goal_start) > 0:
@@ -466,8 +359,6 @@ class RandomAgentWDoneActionTaskSampler(WDoneActionTaskSampler):
             result[0]['initial_agent_pose'] = initial_agent_pose
         else: # we need to fix this for test set, agent init location needs to be fixed, therefore we load a fixed valid agent init that is previously randomized
             result = self.deterministic_data_list[self.sampler_index]['datapoint']
-            # ForkedPdb().set_trace()
-
             scene_name = self.deterministic_data_list[self.sampler_index]['scene']
             datapoint_original_index = self.deterministic_data_list[self.sampler_index]['index']
             selected_agent_init_loc = self.possible_agent_reachable_poses[scene_name][datapoint_original_index]
@@ -477,9 +368,6 @@ class RandomAgentWDoneActionTaskSampler(WDoneActionTaskSampler):
 
         return result
 
-
-class GoodFPSRandomAgentWDoneActionTaskSampler(RandomAgentWDoneActionTaskSampler):
-    _TASK_TYPE = EfficientWDoneActionTask
 
 def get_all_tuples_from_list(list):
     result = []

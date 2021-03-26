@@ -36,9 +36,3 @@ class ArmNaviThorBaseConfig(ArmNavThorBaseConfig, ABC):
             TEST_OBJECTS
         )
     )
-
-    # #
-    # TRAIN_SCENES = TEST_SCENES = VALID_SCENES = ['FloorPlan1_physics']
-    # OBJECT_TYPES = tuple(
-    #     ['Apple']
-    # )

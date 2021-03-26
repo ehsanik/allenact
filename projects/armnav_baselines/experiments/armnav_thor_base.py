@@ -46,8 +46,6 @@ class ArmNavThorBaseConfig(ArmNavBaseConfig, ABC):
     TEST_SCENES: str = None
 
     OBJECT_TYPES: Optional[Sequence[str]] = None
-
-    #LUCA_TODO TODO fix this maybe
     VALID_SAMPLES_IN_SCENE = 1
     TEST_SAMPLES_IN_SCENE = 1
 
@@ -237,7 +235,6 @@ class ArmNavThorBaseConfig(ArmNavBaseConfig, ABC):
         )
         res["scene_period"] = self.TEST_SAMPLES_IN_SCENE
         res["sampler_mode"] = 'test'
-        # res["max_tasks"] = self.TEST_SAMPLES_IN_SCENE * len(res["scenes"]) #LATER_TODO is this a proble?
         res["env_args"] = {}
         res["cap_training"] = self.CAP_TRAINING
         res["env_args"].update(self.ENV_ARGS)

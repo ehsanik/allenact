@@ -7,7 +7,6 @@ from typing import Tuple, Dict, Optional, cast
 
 import gym
 import torch
-import torch.nn as nn
 from gym.spaces.dict import Dict as SpaceDict
 
 from core.algorithms.onpolicy_sync.policy import (
@@ -21,7 +20,6 @@ from core.algorithms.onpolicy_sync.policy import (
 from core.base_abstractions.distributions import CategoricalDistr
 from core.base_abstractions.misc import ActorCriticOutput
 from core.models.basic_models import SimpleCNN, RNNStateEncoder
-from utils.debugger_util import ForkedPdb, is_weight_nan
 from utils.net_utils import input_embedding_net
 
 
@@ -81,9 +79,6 @@ class ArmNavBaselineActorCritic(ActorCriticModel[CategoricalDistr]):
 
         self.actor = LinearActorHead(self._hidden_size, action_space.n)
         self.critic = LinearCriticHead(self._hidden_size)
-
-        # self.object_state_embedding = nn.Embedding(num_embeddings=6, embedding_dim=obj_state_embedding_size)
-
         relative_dist_embedding_size = torch.Tensor([3, 100, obj_state_embedding_size])
         self.relative_dist_embedding = input_embedding_net(relative_dist_embedding_size.long().tolist(), dropout=0)
 
@@ -149,21 +144,8 @@ class ArmNavBaselineActorCritic(ActorCriticModel[CategoricalDistr]):
 
         arm2obj_dist = self.get_relative_distance_embedding(observations['relative_agent_arm_to_obj'])
         obj2goal_dist = self.get_relative_distance_embedding(observations['relative_obj_to_goal'])
-        #LATER_TODO maybe relative arm to agent location would help too?
 
         perception_embed = self.visual_encoder(observations)
-
-        # ForkedPdb().set_trace() # remove
-        # image = observations['rgb_lowres'] # it seems like the rgb is not normalized
-        # depth = observations['depth_lowres']
-        # image = image.squeeze()
-        # depth = depth.squeeze()
-        # import matplotlib.pyplot as plt
-        # plt.imshow(image)
-        # plt.savefig('image.png')
-        # plt.cla()
-        # plt.imshow(depth)
-        # plt.savefig('depth.png')
 
         pickup_bool = (observations['pickedup_object'])
         before_pickup = pickup_bool == 0 #not used because of our initialization

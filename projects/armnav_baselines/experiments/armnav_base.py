@@ -29,7 +29,7 @@ class ArmNavBaseConfig(ExperimentConfig, ABC):
             "goal_success_reward": 10.0,
             "pickup_success_reward": 10.0,
             "failed_stop_reward": 0.0,
-            "shaping_weight": 1.0, #LATER_TODO we are not using this
+            "shaping_weight": 1.0, # we are not using this
             'failed_action_penalty': -0.03
         }
 

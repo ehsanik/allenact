@@ -20,7 +20,7 @@ from plugins.ithor_plugin.ithor_environment import IThorEnvironment
 from plugins.ithor_plugin.ithor_util import round_to_factor
 from plugins.ithor_plugin.ithor_constants import VISIBILITY_DISTANCE, FOV
 from utils.debugger_util import ForkedPdb
-from plugins.ithor_arm_plugin.ithor_arm_constants import ADITIONAL_ARM_ARGS, ARM_MIN_HEIGHT, ARM_MAX_HEIGHT, MOVE_ARM_HEIGHT_CONSTANT, MOVE_ARM_CONSTANT, ARM_BUILD_NUMBER, reset_environment_and_additional_commands, ENV_ARGS
+from plugins.ithor_arm_plugin.ithor_arm_constants import ADITIONAL_ARM_ARGS, ARM_MIN_HEIGHT, ARM_MAX_HEIGHT, MOVE_ARM_HEIGHT_CONSTANT, MOVE_ARM_CONSTANT, ARM_BUILD_NUMBER, reset_environment_and_additional_commands, ENV_ARGS, MOVE_THR
 
 
 class IThorMidLevelEnvironment(IThorEnvironment):
@@ -161,25 +161,7 @@ class IThorMidLevelEnvironment(IThorEnvironment):
 
         self._started = True
         self.reset(scene_name=scene_name, move_mag=move_mag, **kwargs)
-    # def reset_init_params(self):#, **kwargs):TODO there is discrepency here. how about when we change these?
-    #     self.controller.initialization_parameters.update(
-    #         # "gridSize": self._grid_size,
-    #         # "visibilityDistance": self._visibility_distance,
-    #         # "fov": self._fov,
-    #         # "makeAgentsVisible": self.make_agents_visible,
-    #         # "alwaysReturnVisibleRange": self._always_return_visible_range,
-    #         # **kwargs,
-    #         TODO SERIOUSLY?
-    #         dict(gridSize=0.25,
-    #         width=224, height=224,
-    #         visibilityDistance=1.0,
-    #         agentMode='arm', fieldOfView=100,
-    #         agentControllerType='mid-level',
-    #         # server_class=ai2thor.fifo_server.FifoServer,
-    #         useMassThreshold = True, massThreshold = 10,
-    #         autoSimulation=False, autoSyncTransforms=True)
-    #
-    #     )
+
     def reset(
         self, scene_name: Optional[str], move_mag: float = 0.25, **kwargs,
     ):
@@ -188,13 +170,13 @@ class IThorMidLevelEnvironment(IThorEnvironment):
 
         if scene_name is None:
             scene_name = self.controller.last_event.metadata["sceneName"]
-        # self.reset_init_params()#**kwargs) TODO does removing this fixes the problem?
+        # self.reset_init_params()#**kwargs) removing this fixes one of the crashing problem
 
-        #TODO try to solve the crash issue
+        # to solve the crash issue
         try:
             reset_environment_and_additional_commands(self.controller, scene_name)
         except Exception:
-            print('OH NO IT FAILED RESETTING THE SCENE,', scene_name)
+            print('RESETTING THE SCENE,', scene_name)
             self.controller = ai2thor.controller.Controller(**self.env_args)
             reset_environment_and_additional_commands(self.controller, scene_name)
 
@@ -218,8 +200,7 @@ class IThorMidLevelEnvironment(IThorEnvironment):
 
     def randomize_agent_location(
         self, seed: int = None, partial_position: Optional[Dict[str, float]] = None
-    ) -> Dict: # TODO for first stage only if object is visible
-
+    ) -> Dict:
         raise Exception('not used')
 
     def is_object_at_low_level_hand(self,object_id):
@@ -244,25 +225,6 @@ class IThorMidLevelEnvironment(IThorEnvironment):
             if v != v or math.isinf(v):
                 corrected_dict[k] = 0
                 anything_changed += 1
-        if anything_changed > 0:
-            #LATER_TODO this function is seriously bad TODO
-            log_error_dir ='experiment_output/error_logs'
-            os.makedirs(log_error_dir, exist_ok=True)
-            current_time_file = datetime.now().strftime("%m_%d_%Y_%H_%M_%S_%f.txt")
-
-            with open(os.path.join(log_error_dir, current_time_file), 'w') as log_file:
-                def log_error(*args):
-                    print(args)
-                    for a in args:
-                        log_file.write(str(a) + ' ')
-                    log_file.write('\n')
-                log_error('who called?', extra_tag)
-                log_error('Scene is', self.controller.last_event.metadata['sceneName'])
-                log_error('Arm was nan, There were this many inf nan', anything_changed)
-                log_error('list of actions', self.list_of_actions_so_far)
-                log_error('flawed_one', flawed_dict)
-                print('WARNING: NAN was found')
-
         return corrected_dict
 
 
@@ -309,7 +271,6 @@ class IThorMidLevelEnvironment(IThorEnvironment):
     def pickup_object(self, object_id):
         event = self.step(dict(action='PickUpMidLevelHand'))
         success = event.metadata['lastActionSuccess']
-
         # make sure the event succeeds, correct object in hand otherwise drop it and return false
         if success:
             object_inventory = self.controller.last_event.metadata['arm']['HeldObjects']
@@ -334,10 +295,9 @@ class IThorMidLevelEnvironment(IThorEnvironment):
         rotation_close = [abs(current_obj_pose['rotation'][k] - init_obj_pose['rotation'][k]) <= threshold for k in ['x','y','z']]
         rotation_is_close = sum(rotation_close) == 3
         return position_is_close and rotation_is_close
-    def get_objects_moved(self, initial_object_locations): #TODO this might be pretty slow actually
+    def get_objects_moved(self, initial_object_locations):
         current_object_locations = self.get_current_object_locations()
         moved_objects = []
-        MOVE_THR = 0.01 #TODO is this a good number?
         for object_id in current_object_locations.keys():
             if not self.close_enough(current_object_locations[object_id], initial_object_locations[object_id], threshold=MOVE_THR):
                 moved_objects.append(object_id)
@@ -346,12 +306,8 @@ class IThorMidLevelEnvironment(IThorEnvironment):
     def step(
             self, action_dict: Dict[str, Union[str, int, float]]
     ) -> ai2thor.server.Event:
-
-
         """Take a step in the ai2thor environment."""
         action = typing.cast(str, action_dict["action"])
-
-
 
         skip_render = "renderImage" in action_dict and not action_dict["renderImage"]
         last_frame: Optional[np.ndarray] = None
@@ -360,9 +316,6 @@ class IThorMidLevelEnvironment(IThorEnvironment):
 
         if self.simplify_physics:
             action_dict["simplifyOPhysics"] = True
-
-        # action_dict['manualInteract'] = True # we should remove this right?
-
         if action in ['PickUpMidLevel', 'DoneMidLevel']:
             action_dict['action'] = 'Pass'
             if action == 'PickUpMidLevel':
@@ -374,7 +327,6 @@ class IThorMidLevelEnvironment(IThorEnvironment):
                         #This version of the task is actually harder # consider making it easier, are we penalizing failed pickup? yes
                         event = self.step(dict(action='PickUpMidLevelHand'))
                         #  we are doing an additional pass here, label is not right and if we fail we will do it twice
-                        #TODO double check logic
                         object_inventory = self.controller.last_event.metadata['arm']['HeldObjects']
                         if len(object_inventory) > 0 and object_id not in object_inventory:
                             event = self.step(dict(action='DropMidLevelHand'))
@@ -427,16 +379,11 @@ class IThorMidLevelEnvironment(IThorEnvironment):
                     base_position['z'] -= MOVE_ARM_CONSTANT
                 action_dict['position'] = {k:v for (k,v) in base_position.items() if k in ['x', 'y', 'z']}
 
-        # if action_dict['action'] in ['MoveMidLevelArm', 'MoveMidLevelArmHeight', 'MoveContinuous', 'DropMidLevelHand', 'RotateContinuous']: #LATER_TODO pick up does not have it?
-        #     action_dict = {**action_dict, **ADITIONAL_ARM_ARGS}
-        #LATER_TODO should I manually set action success based on previous position? be careful to change last_event as well
 
         sr = self.controller.step(action_dict)
         self.list_of_actions_so_far.append(action_dict)
 
         if self._verbose:
-            # print('controller.step({})'.format(action_dict)) #
-            # print('Step in env:', action, 'success', sr.metadata['lastActionSuccess'], sr.metadata['actionReturn'] if not sr.metadata['lastActionSuccess'] else '')
             print(self.controller.last_event)
 
 

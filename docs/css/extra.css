@@ -1,9 +1,0 @@
-/* Allow word-breaks in headers */
-h1 {
-  word-wrap: break-word;
-}
-
-/* Don't have the edit button as it's broken for us */
-.md-content__button {
-    display: none;
-}

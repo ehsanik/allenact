@@ -5,7 +5,7 @@ import numpy as np
 import imageio
 
 from plugins.ithor_arm_plugin.arm_calculation_utils import initialize_arm
-from plugins.ithor_arm_plugin.ithor_arm_constants import scene_start_cheating_init_pose, reset_environment_and_additional_commands, transport_wrapper
+from plugins.ithor_arm_plugin.ithor_arm_constants import ARM_START_POSITIONS, reset_environment_and_additional_commands, transport_wrapper
 from plugins.ithor_arm_plugin.ithor_arm_constants import ADITIONAL_ARM_ARGS
 from utils.debugger_util import ForkedPdb
 import cv2
@@ -78,28 +78,9 @@ class TestMetricLogger(LoggerVisualizer):
 
         self.log_queue = []
         self.action_queue = []
-    # #TODO what if sometimes it does not finish
-    # def finish_episode(self, episode_info, task_info):
-    #     pass
-        # now = datetime.now()
-        #
-        #
-        # time_to_write = now.strftime("%m_%d_%Y_%H_%M_%S_%f")
-        # print('Loggigng', time_to_write, 'len', len(self.log_queue))
-        #
-        # pickup_success = episode_info.object_picked_up
-        # episode_success = episode_info._success
-        #
-        # for i, img in enumerate(self.log_queue):
-        #     image_dir = os.path.join(self.log_dir, time_to_write + '_seq{}.png'.format(str(i)))
-        #     cv2.imwrite(image_dir, img[:,:,[2,1,0]])
-        #
-        # self.log_queue = []
-        # self.action_queue = []
 
     def log(self, environment, action_str):
         # We can add agent arm and state location if needed
-        # image_tensor = environment.current_frame
         self.action_queue.append(action_str)
         self.log_queue.append(action_str)
 
@@ -139,8 +120,6 @@ class ImageVisualizer(LoggerVisualizer):
         self.log_queue.append(image_tensor)
 
     def log_start_goal(self, env, task_info, tag, img_adr):
-        #LATER_TODO are we sure everything is done by this point metrics
-
         object_location = task_info['object_location']
         object_id = task_info['object_id']
         agent_state = task_info['agent_pose']

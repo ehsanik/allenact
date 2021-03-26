@@ -11,7 +11,6 @@ from utils.debugger_util import ForkedPdb
 from plugins.ithor_arm_plugin.ithor_arm_constants import MOVE_ARM_CONSTANT
 from plugins.ithor_arm_plugin.ithor_arm_viz import LoggerVisualizer
 
-# DONE = "Done"
 MOVE_AHEAD = "MoveAheadContinuous"
 ROTATE_LEFT = "RotateLeftContinuous"
 ROTATE_RIGHT = "RotateRightContinuous"
@@ -25,9 +24,6 @@ MOVE_ARM_Z_P = "MoveArmZP"
 MOVE_ARM_Z_M = "MoveArmZM"
 PICKUP = 'PickUpMidLevel'
 DONE = 'DoneMidLevel'
-# MidPick = "PickUpMidLevelHand"
-
-#KIANA later on add end action and hand rotations and drop action
 
 from core.base_abstractions.misc import RLStepResult
 from core.base_abstractions.sensor import Sensor
@@ -38,11 +34,9 @@ def position_distance(s1, s2):
     position2 = s2['position']
     return ((position1['x'] - position2['x'])**2 + (position1['y'] - position2['y'])**2 + (position1['z'] - position2['z'])**2) ** 0.5
 
+class AbstractPickUpDropOffTask(Task[IThorMidLevelEnvironment]):
 
-
-class PickUpDropOffTask(Task[IThorMidLevelEnvironment]):
-
-    _actions = (MOVE_ARM_HEIGHT_P, MOVE_ARM_HEIGHT_M, MOVE_ARM_X_P, MOVE_ARM_X_M, MOVE_ARM_Y_P, MOVE_ARM_Y_M, MOVE_ARM_Z_P, MOVE_ARM_Z_M, MOVE_AHEAD, ROTATE_RIGHT, ROTATE_LEFT)#, PICKUP, DONE)
+    _actions = (MOVE_ARM_HEIGHT_P, MOVE_ARM_HEIGHT_M, MOVE_ARM_X_P, MOVE_ARM_X_M, MOVE_ARM_Y_P, MOVE_ARM_Y_M, MOVE_ARM_Z_P, MOVE_ARM_Z_M, MOVE_AHEAD, ROTATE_RIGHT, ROTATE_LEFT)
 
     def __init__(
             self,
@@ -101,19 +95,16 @@ class PickUpDropOffTask(Task[IThorMidLevelEnvironment]):
         #KIANA ignore rotation for now
         position1 = s1['position']
         position2 = s2['position']
-        eps = MOVE_ARM_CONSTANT * 2 # we need to talk about this. is it okay to have this big of a distance? or should we only do this for y because that is the hardest?
+        eps = MOVE_ARM_CONSTANT * 2
         return (abs(position1['x'] - position2['x']) < eps and abs(position1['y'] - position2['y']) < eps and abs(position1['z'] - position2['z']) < eps)
 
 
     def start_visualize(self):
         for visualizer in self.visualizers:
-            # assert visualizer.is_empty(), ForkedPdb().set_trace()
-            #LATER_TODO this is a quick hack, fix it later, why finish visualizer is not called?
             if not visualizer.is_empty():
                 print('OH NO VISUALIZER WAS NOT EMPTY')
                 visualizer.finish_episode(self.env, self, self.task_info)
                 visualizer.finish_episode_metrics(self, self.task_info, None)
-            # image = self.env.current_frame #Adding first frame
             visualizer.log(self.env, "")
 
     def visualize(self, action_str):
@@ -143,7 +134,7 @@ class PickUpDropOffTask(Task[IThorMidLevelEnvironment]):
         action_success_stat['metric/action_success/total'] = 0.
 
         seq_len = len(self.action_sequence_and_success)
-        for (action_name, action_success) in self.action_sequence_and_success: # TODO is this too slow?
+        for (action_name, action_success) in self.action_sequence_and_success:
             action_stat['metric/action_stat/' + action_name] += 1.
             action_success_stat['metric/action_success/{}'.format(action_name)] += (action_success)
             action_success_stat['metric/action_success/total'] += (action_success)
@@ -163,7 +154,7 @@ class PickUpDropOffTask(Task[IThorMidLevelEnvironment]):
 
 
     def metrics(self) -> Dict[str, Any]:
-        result = super(PickUpDropOffTask, self).metrics()
+        result = super(AbstractPickUpDropOffTask, self).metrics()
         if self.is_done():
             result = {**result, **self.calc_action_stat_metrics()}
             final_obj_distance_from_goal = self.obj_distance_from_goal()
@@ -176,8 +167,6 @@ class PickUpDropOffTask(Task[IThorMidLevelEnvironment]):
             original_distance = self.get_original_object_distance()
             result['metric/average/original_distance'] = original_distance
 
-
-
             # this ratio can be more than 1?
             if self.object_picked_up:
                 ratio_distance_left = final_obj_distance_from_goal / original_distance
@@ -186,7 +175,6 @@ class PickUpDropOffTask(Task[IThorMidLevelEnvironment]):
 
             if self._success:
                 result['metric/average/eplen_success'] = result['ep_length']
-
                 # put back this is not the reason for being slow
                 objects_moved = self.env.get_objects_moved(self.initial_object_metadata)
                 # Unnecessary, this is definitely happening objects_moved.remove(self.task_info['object_id'])
@@ -205,58 +193,7 @@ class PickUpDropOffTask(Task[IThorMidLevelEnvironment]):
 
 
     def _step(self, action: int) -> RLStepResult:
-
-        action_str = self.class_action_names()[action]
-
-
-        self._last_action_str = action_str
-        self.env.step({"action": action_str})
-        self.last_action_success = self.env.last_action_success
-
-        last_action_name = self._last_action_str
-        last_action_success = float(self.last_action_success)
-        self.action_sequence_and_success.append((last_action_name, last_action_success))
-        self.visualize(last_action_name)
-
-        # just check whether the object is within the reach, if yes, pick up
-        object_id = self.task_info['objectId']
-
-        success_finished_task = False
-
-
-
-        if not self.object_picked_up:
-
-            pickupable_objects = self.env.get_pickupable_objects()
-
-            if object_id in pickupable_objects:
-                # self.env.finish_and_show_off() # remove this, it's just for visualization purposes
-                success = self.env.pickup_object(self.task_info['objectId'])
-                # make sure the result of above is true before setting the following to true
-                if success:
-                    self.object_picked_up = True
-                    self.eplen_pickup = self._num_steps_taken + 1 # plus one because this step has not been counted yet
-
-        else:
-            object_state = self.env.get_object_by_id(object_id)
-            goal_state = self.task_info['target_location']
-            if self.object_picked_up and self.obj_state_aproximity(object_state, goal_state):
-                success_finished_task = True
-
-        if success_finished_task:
-            self._took_end_action = True
-            self._success = True
-            self.last_action_success = True
-
-
-
-        step_result = RLStepResult(
-            observation=self.get_observations(),
-            reward=self.judge(),
-            done=self.is_done(),
-            info={"last_action_success": self.last_action_success},
-        )
-        return step_result
+        raise Exception('Not implemented')
 
     def arm_distance_from_obj(self):
         goal_obj_id = self.task_info['objectId']
@@ -278,52 +215,11 @@ class PickUpDropOffTask(Task[IThorMidLevelEnvironment]):
         original_object_distance = position_distance(s_init, current_location)
         return original_object_distance
 
-
-
-
     def judge(self) -> float:
         """Compute the reward after having taken a step."""
-        reward = self.reward_configs['step_penalty']
+        raise Exception('Not implemented')
 
-        if not self.last_action_success:
-            reward += self.reward_configs['failed_action_penalty']
-
-        if self._took_end_action:
-            reward += self.reward_configs['goal_success_reward'] if self._success else self.reward_configs['failed_stop_reward']
-
-        # if self._last_action_str in [PICKUP, DONE]: # this needs to be removed later, just a sanity check
-        #     reward -= 5
-
-        #increase reward if object pickup and only do it once
-        if not self.got_reward_for_pickup and self.object_picked_up:
-            reward += self.reward_configs['pickup_success_reward']
-            self.got_reward_for_pickup = True
-
-        current_obj_to_arm_distance = self.arm_distance_from_obj()
-        if self.last_arm_to_obj_distance is None:
-            delta_arm_to_obj_distance_reward = 0
-        else:
-            delta_arm_to_obj_distance_reward = self.last_arm_to_obj_distance - current_obj_to_arm_distance
-        self.last_arm_to_obj_distance = current_obj_to_arm_distance
-        reward += delta_arm_to_obj_distance_reward
-
-        current_obj_to_goal_distance = self.obj_distance_from_goal()
-        if self.last_obj_to_goal_distance is None:
-            delta_obj_to_goal_distance_reward = 0
-        else:
-            delta_obj_to_goal_distance_reward = self.last_obj_to_goal_distance - current_obj_to_goal_distance
-        self.last_obj_to_goal_distance = current_obj_to_goal_distance
-        reward += delta_obj_to_goal_distance_reward
-
-
-
-        # distance * 0.1 does not make sense because then it will not take any actions
-
-        # add collision cost, maybe distance to goal objective,...
-
-        return float(reward)
-
-class WDoneActionTask(PickUpDropOffTask):
+class WDoneActionTask(AbstractPickUpDropOffTask):
     _actions = (MOVE_ARM_HEIGHT_P, MOVE_ARM_HEIGHT_M, MOVE_ARM_X_P, MOVE_ARM_X_M, MOVE_ARM_Y_P, MOVE_ARM_Y_M, MOVE_ARM_Z_P, MOVE_ARM_Z_M, MOVE_AHEAD, ROTATE_RIGHT, ROTATE_LEFT, PICKUP, DONE)
 
     def _step(self, action: int) -> RLStepResult:
@@ -345,8 +241,6 @@ class WDoneActionTask(PickUpDropOffTask):
         self.visualize(last_action_name)
 
         # just check whether the object is within the reach, if yes, pick up
-
-
 
         if not self.object_picked_up:
 
@@ -382,9 +276,6 @@ class WDoneActionTask(PickUpDropOffTask):
         if self._took_end_action:
             reward += self.reward_configs['goal_success_reward'] if self._success else self.reward_configs['failed_stop_reward']
 
-        # if self._last_action_str in [PICKUP, DONE]: # this needs to be removed later, just a sanity check
-        #     reward -= 5
-
         #increase reward if object pickup and only do it once
         if not self.got_reward_for_pickup and self.object_picked_up:
             reward += self.reward_configs['pickup_success_reward']
@@ -406,124 +297,7 @@ class WDoneActionTask(PickUpDropOffTask):
         self.last_obj_to_goal_distance = current_obj_to_goal_distance
         reward += delta_obj_to_goal_distance_reward
 
-
-
-        # distance * 0.1 does not make sense because then it will not take any actions
-
         # add collision cost, maybe distance to goal objective,...
 
         return float(reward)
 
-class NoDisturbWDoneActionTask(WDoneActionTask):
-    def __init__(self, **kwargs):
-        super(NoDisturbWDoneActionTask, self).__init__(**kwargs)
-        self.previous_object_metadata = self.env.get_current_object_locations()
-        print('Seems like this does not work, check todos')
-        ForkedPdb().set_trace()
-    def judge(self) -> float:
-        """Compute the reward after having taken a step."""
-        reward = super(NoDisturbWDoneActionTask, self).judge()
-
-        objects_moved = self.env.get_objects_moved(self.previous_object_metadata)
-        num_moved_objects = len(objects_moved)
-        if self.task_info['objectId'] in objects_moved:
-            num_moved_objects -= 1
-        reward += self.reward_configs['failed_action_penalty'] #* num_moved_objects #LATER_TODO is this a good reward? or should we only penalize it once?
-        self.previous_object_metadata = self.env.get_current_object_locations()
-
-        return float(reward)
-
-class EfficientWDoneActionTask(WDoneActionTask):
-    def _step(self, action: int) -> RLStepResult:
-
-        action_str = self.class_action_names()[action]
-
-
-        self._last_action_str = action_str
-        action_dict = {"action": action_str}
-        object_id = self.task_info['objectId']
-        if action_str == PICKUP:
-            action_dict = {**action_dict, 'object_id':object_id}
-        self.env.step(action_dict)
-        self.last_action_success = self.env.last_action_success
-
-        last_action_name = self._last_action_str
-        last_action_success = float(self.last_action_success)
-        self.action_sequence_and_success.append((last_action_name, last_action_success))
-        self.visualize(last_action_name)
-
-        # just check whether the object is within the reach, if yes, pick up
-
-
-
-        if not self.object_picked_up:
-
-            if self.env.is_object_at_low_level_hand(object_id):
-                self.object_picked_up = True
-                self.eplen_pickup = self._num_steps_taken + 1 # plus one because this step has not been counted yet
-
-        if action_str == DONE:
-
-            object_state = self.env.get_object_by_id(object_id)
-            goal_state = self.task_info['target_location']
-            goal_achieved = self.object_picked_up and self.obj_state_aproximity(object_state, goal_state)
-
-            if goal_achieved:
-
-                self._took_end_action = True
-                self.last_action_success = goal_achieved
-                self._success = goal_achieved
-
-
-        step_result = RLStepResult(
-            observation=self.get_observations(),
-            reward=self.judge(),
-            done=self.is_done(),
-            info={"last_action_success": self.last_action_success},
-        )
-        return step_result
-
-
-    def judge(self) -> float:
-        """Compute the reward after having taken a step."""
-        reward = self.reward_configs['step_penalty']
-
-        if not self.last_action_success or (self._last_action_str==PICKUP and not self.object_picked_up):
-            reward += self.reward_configs['failed_action_penalty']
-
-        if self._took_end_action:
-            reward += self.reward_configs['goal_success_reward'] if self._success else self.reward_configs['failed_stop_reward']
-        elif self._last_action_str == DONE:
-            reward -= self.reward_configs['goal_success_reward']
-
-        # if self._last_action_str in [PICKUP, DONE]: # this needs to be removed later, just a sanity check
-        #     reward -= 5
-
-        #increase reward if object pickup and only do it once
-        if not self.got_reward_for_pickup and self.object_picked_up:
-            reward += self.reward_configs['pickup_success_reward']
-            self.got_reward_for_pickup = True
-
-        current_obj_to_arm_distance = self.arm_distance_from_obj()
-        if self.last_arm_to_obj_distance is None:
-            delta_arm_to_obj_distance_reward = 0
-        else:
-            delta_arm_to_obj_distance_reward = self.last_arm_to_obj_distance - current_obj_to_arm_distance
-        self.last_arm_to_obj_distance = current_obj_to_arm_distance
-        reward += delta_arm_to_obj_distance_reward
-
-        current_obj_to_goal_distance = self.obj_distance_from_goal()
-        if self.last_obj_to_goal_distance is None:
-            delta_obj_to_goal_distance_reward = 0
-        else:
-            delta_obj_to_goal_distance_reward = self.last_obj_to_goal_distance - current_obj_to_goal_distance
-        self.last_obj_to_goal_distance = current_obj_to_goal_distance
-        reward += delta_obj_to_goal_distance_reward
-
-
-
-        # distance * 0.1 does not make sense because then it will not take any actions
-
-        # add collision cost, maybe distance to goal objective,...
-
-        return float(reward)

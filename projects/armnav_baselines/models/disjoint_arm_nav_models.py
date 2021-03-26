@@ -136,14 +136,10 @@ class DisjointArmNavBaselineActorCritic(ActorCriticModel[CategoricalDistr]):
 
         arm2obj_dist = self.relative_dist_embedding_pick(observations['relative_agent_arm_to_obj'])
         obj2goal_dist = self.relative_dist_embedding_drop(observations['relative_obj_to_goal'])
-        #LATER_TODO maybe relative arm to agent location would help too?
 
         perception_embed_pick = self.visual_encoder_pick(observations)
         perception_embed_drop = self.visual_encoder_drop(observations)
 
-        # perception_embed = self.visual_encoder(observations)
-        # if perception_embed.shape[0] > 20:
-        #     is_weight_nan(self)# remove
 
         pickup_bool = (observations['pickedup_object'])
         before_pickup = pickup_bool == 0 #not used because of our initialization
@@ -172,23 +168,12 @@ class DisjointArmNavBaselineActorCritic(ActorCriticModel[CategoricalDistr]):
         critic_out[after_pickup] = critic_out_drop[after_pickup]
 
 
-        # actor_out = self.actor(x_out)
-        # critic_out = self.critic(x_out)
-        # actor_critic_output = ActorCriticOutput(
-        #     distributions=actor_out, values=critic_out, extras={}
-        # )
-        #
-        # updated_memory = memory.set_tensor('rnn', rnn_hidden_states)
-
-
-
         actor_out = CategoricalDistr(logits=actor_out)
         actor_critic_output = ActorCriticOutput(
             distributions=actor_out, values=critic_out, extras={}
         )
         updated_memory = memory.set_tensor('rnn', rnn_hidden_states)
 
-        # distributions, values = self.actor_and_critic(x_out)
         return (
             actor_critic_output,
             updated_memory,
