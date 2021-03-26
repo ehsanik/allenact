@@ -4,7 +4,7 @@ import torch
 from core.base_abstractions.sensor import DepthSensor, Sensor, RGBSensor
 from plugins.ithor_arm_plugin.arm_calculation_utils import convert_world_to_agent_coordinate, convert_state_to_tensor, diff_position
 from plugins.ithor_arm_plugin.ithor_arm_constants import VALID_OBJECT_LIST
-from plugins.ithor_arm_plugin.ithor_arm_environment import IThorMidLevelEnvironment
+from plugins.ithor_arm_plugin.ithor_arm_environment import ArmTHOREnvironment
 from plugins.ithor_plugin.ithor_environment import IThorEnvironment
 from core.base_abstractions.task import Task
 import numpy as np
@@ -78,7 +78,7 @@ class RelativeObjectToGoalSensor(Sensor):
 
     def get_observation(
             self,
-            env: IThorMidLevelEnvironment,
+            env: ArmTHOREnvironment,
             task: Task,
             *args: Any,
             **kwargs: Any
@@ -107,7 +107,7 @@ class RelativeAgentArmToObjectSensor(Sensor):
 
     def get_observation(
             self,
-            env: IThorMidLevelEnvironment,
+            env: ArmTHOREnvironment,
             task: Task,
             *args: Any,
             **kwargs: Any
@@ -135,7 +135,7 @@ class PickedUpObjSensor(Sensor):
 
     def get_observation(
             self,
-            env: IThorMidLevelEnvironment,
+            env: ArmTHOREnvironment,
             task: Task,
             *args: Any,
             **kwargs: Any

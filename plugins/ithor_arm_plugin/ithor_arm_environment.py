@@ -1,4 +1,4 @@
-"""A wrapper for engaging with the THOR environment."""
+"""A wrapper for engaging with the ArmTHOR environment."""
 
 import copy
 import functools
@@ -23,8 +23,8 @@ from utils.debugger_util import ForkedPdb
 from plugins.ithor_arm_plugin.ithor_arm_constants import ADITIONAL_ARM_ARGS, ARM_MIN_HEIGHT, ARM_MAX_HEIGHT, MOVE_ARM_HEIGHT_CONSTANT, MOVE_ARM_CONSTANT, ARM_BUILD_NUMBER, reset_environment_and_additional_commands, ENV_ARGS, MOVE_THR
 
 
-class IThorMidLevelEnvironment(IThorEnvironment):
-    """Wrapper for the ai2thor controller providing additional functionality
+class ArmTHOREnvironment(IThorEnvironment):
+    """Wrapper for the ai2thor controller providing arm functionality
     and bookkeeping.
 
     See [here](https://ai2thor.allenai.org/documentation/installation) for comprehensive

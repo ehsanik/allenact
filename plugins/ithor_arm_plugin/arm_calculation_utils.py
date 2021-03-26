@@ -21,8 +21,6 @@ def diff_position(state_goal, state_curr):
     result = {k:abs(p1[k] - p2[k]) for k in p1.keys()}
     return result
 
-
-
 def make_rotation_matrix(position, rotation):
     result = np.zeros((4,4))
     r = R.from_euler('xyz', [rotation['x'], rotation['y'], rotation['z']], degrees=True)
@@ -42,17 +40,6 @@ def position_rotation_from_mat(matrix):
     result['rotation'] = rotation_dict
     position = matrix[:3, 3]
     result['position'] = {'x': position[0], 'y': position[1], 'z': position[2]}
-    return result
-
-def old_convert_world_to_agent_coordinate(world_obj, agent_state):
-    agent_rotation_matrix = make_rotation_matrix(agent_state['position'], agent_state['rotation'])
-    agent_translation = agent_rotation_matrix[:3, 3]
-    inverse_agent_rotation = inverse_rot_trans_mat(agent_rotation_matrix[:3, :3])
-    obj_matrix = make_rotation_matrix(world_obj['position'], world_obj['rotation'])
-    obj_translation = np.matmul(inverse_agent_rotation, (obj_matrix[:3, 3] - agent_translation))
-    # add rotation later
-    obj_matrix[:3, 3] = obj_translation
-    result = position_rotation_from_mat(obj_matrix)
     return result
 
 
@@ -119,45 +106,3 @@ def initialize_arm(controller):
     event2 = controller.step(dict(action='MoveMidLevelArm',  position=dict(x=0.0, y=0, z=0.35), **ADITIONAL_ARM_ARGS))
     event3 = controller.step(dict(action='MoveMidLevelArmHeight', y=0.8, **ADITIONAL_ARM_ARGS))
     return event1, event2, event3
-
-def is_agent_at_position(controller, action_detail):
-    target_pose = dict(
-        position={'x': action_detail['x'], 'y': action_detail['y'], 'z': action_detail['z'], },
-        rotation=action_detail['rotation'],
-        horizon=action_detail['horizon']
-    )
-    current_agent_pose = controller.last_event.metadata['agent']
-    current_agent_pose = dict(
-        position=current_agent_pose['position'],
-        rotation=current_agent_pose['rotation'],
-        horizon=current_agent_pose['cameraHorizon'],
-    )
-    for k in target_pose['position'].keys():
-        if abs(target_pose['position'][k] - current_agent_pose['position'][k]) > 0.001:
-            return False
-    for k in target_pose['rotation'].keys():
-        target_val = target_pose['rotation'][k]
-        current_val = current_agent_pose['rotation'][k]
-        target_val = round(target_val) % 360
-        current_val = round(current_val) % 360
-        if abs(target_val - current_val) > 0.001:
-            return False
-    if abs(target_pose['horizon'] - current_agent_pose['horizon']) > 0.001:
-        return False
-    return True
-
-def is_object_in_receptacle(event,target_obj,target_receptacle):
-    all_containing_receptacle = set([])
-    parent_queue = [target_obj]
-    while(len(parent_queue) > 0):
-        top_queue = parent_queue[0]
-        parent_queue = parent_queue[1:]
-        if top_queue in all_containing_receptacle:
-            continue
-        current_parent_list = event.get_object(top_queue)['parentReceptacles']
-        if current_parent_list is None:
-            continue
-        else:
-            parent_queue += current_parent_list
-            all_containing_receptacle.update(set(current_parent_list))
-    return target_receptacle in all_containing_receptacle

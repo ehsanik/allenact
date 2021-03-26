@@ -6,24 +6,11 @@ from typing import Dict, Tuple, List, Any, Optional
 import gym
 import numpy as np
 
-from plugins.ithor_arm_plugin.ithor_arm_environment import IThorMidLevelEnvironment
+from plugins.ithor_arm_plugin.ithor_arm_environment import ArmTHOREnvironment
 from utils.debugger_util import ForkedPdb
-from plugins.ithor_arm_plugin.ithor_arm_constants import MOVE_ARM_CONSTANT
+from plugins.ithor_arm_plugin.ithor_arm_constants import MOVE_ARM_CONSTANT, MOVE_ARM_HEIGHT_P, MOVE_ARM_HEIGHT_M, MOVE_ARM_X_P, MOVE_ARM_X_M, MOVE_ARM_Y_P, MOVE_ARM_Y_M, MOVE_ARM_Z_P, MOVE_ARM_Z_M, MOVE_AHEAD, ROTATE_RIGHT, ROTATE_LEFT, PICKUP, DONE
 from plugins.ithor_arm_plugin.ithor_arm_viz import LoggerVisualizer
 
-MOVE_AHEAD = "MoveAheadContinuous"
-ROTATE_LEFT = "RotateLeftContinuous"
-ROTATE_RIGHT = "RotateRightContinuous"
-MOVE_ARM_HEIGHT_P = "MoveArmHeightP"
-MOVE_ARM_HEIGHT_M = "MoveArmHeightM"
-MOVE_ARM_X_P = "MoveArmXP"
-MOVE_ARM_X_M = "MoveArmXM"
-MOVE_ARM_Y_P = "MoveArmYP"
-MOVE_ARM_Y_M = "MoveArmYM"
-MOVE_ARM_Z_P = "MoveArmZP"
-MOVE_ARM_Z_M = "MoveArmZM"
-PICKUP = 'PickUpMidLevel'
-DONE = 'DoneMidLevel'
 
 from core.base_abstractions.misc import RLStepResult
 from core.base_abstractions.sensor import Sensor
@@ -34,13 +21,13 @@ def position_distance(s1, s2):
     position2 = s2['position']
     return ((position1['x'] - position2['x'])**2 + (position1['y'] - position2['y'])**2 + (position1['z'] - position2['z'])**2) ** 0.5
 
-class AbstractPickUpDropOffTask(Task[IThorMidLevelEnvironment]):
+class AbstractPickUpDropOffTask(Task[ArmTHOREnvironment]):
 
     _actions = (MOVE_ARM_HEIGHT_P, MOVE_ARM_HEIGHT_M, MOVE_ARM_X_P, MOVE_ARM_X_M, MOVE_ARM_Y_P, MOVE_ARM_Y_M, MOVE_ARM_Z_P, MOVE_ARM_Z_M, MOVE_AHEAD, ROTATE_RIGHT, ROTATE_LEFT)
 
     def __init__(
             self,
-            env: IThorMidLevelEnvironment,
+            env: ArmTHOREnvironment,
             sensors: List[Sensor],
             task_info: Dict[str, Any],
             max_steps: int,
@@ -240,8 +227,7 @@ class WDoneActionTask(AbstractPickUpDropOffTask):
         self.action_sequence_and_success.append((last_action_name, last_action_success))
         self.visualize(last_action_name)
 
-        # just check whether the object is within the reach, if yes, pick up
-
+        #If the object has not been picked up yet and it was picked up in the previous step update parameters to integrate it into reward
         if not self.object_picked_up:
 
             if self.env.is_object_at_low_level_hand(object_id):

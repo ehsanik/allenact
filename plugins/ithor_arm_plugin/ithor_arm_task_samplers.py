@@ -7,7 +7,7 @@ from core.base_abstractions.task import Task
 from plugins.ithor_arm_plugin.arm_calculation_utils import initialize_arm
 
 from plugins.ithor_arm_plugin.ithor_arm_tasks import AbstractPickUpDropOffTask, WDoneActionTask
-from plugins.ithor_arm_plugin.ithor_arm_environment import IThorMidLevelEnvironment
+from plugins.ithor_arm_plugin.ithor_arm_environment import ArmTHOREnvironment
 from core.base_abstractions.sensor import Sensor
 from core.base_abstractions.task import TaskSampler
 from utils.experiment_utils import set_deterministic_cudnn, set_seed
@@ -42,7 +42,7 @@ class AbstractMidLevelArmTaskSampler(TaskSampler):
         self.env_args = env_args
         self.scenes = scenes
         self.grid_size = 0.25
-        self.env: Optional[IThorMidLevelEnvironment] = None
+        self.env: Optional[ArmTHOREnvironment] = None
         self.sensors = sensors
         self.max_steps = max_steps
         self._action_space = action_space
@@ -71,8 +71,8 @@ class AbstractMidLevelArmTaskSampler(TaskSampler):
         self.cap_training = kwargs['cap_training']
 
 
-    def _create_environment(self, **kwargs) -> IThorMidLevelEnvironment:
-        env = IThorMidLevelEnvironment(
+    def _create_environment(self, **kwargs) -> ArmTHOREnvironment:
+        env = ArmTHOREnvironment(
             make_agents_visible=False,
             object_open_speed=0.05,
             env_args=self.env_args,

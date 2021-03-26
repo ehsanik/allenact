@@ -24,16 +24,13 @@ from utils.net_utils import input_embedding_net
 
 
 class ArmNavBaselineActorCritic(ActorCriticModel[CategoricalDistr]):
-    """Baseline recurrent actor critic model for object-navigation.
+    """Baseline recurrent actor critic model for armnav task.
 
     # Attributes
     action_space : The space of actions available to the agent. Currently only discrete
         actions are allowed (so this space will always be of type `gym.spaces.Discrete`).
     observation_space : The observation space expected by the agent. This observation space
-        should include (optionally) 'rgb' images and 'depth' images and is required to
-        have a component corresponding to the goal `goal_sensor_uuid`.
-    goal_sensor_uuid : The uuid of the sensor of the goal object. See `GoalObjectTypeThorSensor`
-        as an example of such a sensor.
+        should include (optionally) 'rgb' images and 'depth' images.
     hidden_size : The hidden size of the GRU RNN.
     object_type_embedding_dim: The dimensionality of the embedding corresponding to the goal
         object type.
