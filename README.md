@@ -1,4 +1,6 @@
-# 2021 AI2-THOR Rearrangement Challenge
+# ManipulaTHOR: A Framework for Visual Object Manipulation
+#### Kiana Ehsani, Winson Han, Alvaro Herrasti, Eli VanderBilt, Luca Weihs, Eric Kolve, Aniruddha Kembhavi, Roozbeh Mottaghi
+#### Oral Presentation at CVPR2021
 
 Welcome to the 2021 AI2-THOR Rearrangement Challenge hosted at the
 [CVPR'21 Embodied-AI Workshop](https://embodied-ai.org/).
@@ -54,7 +56,7 @@ with open("README.md", "r") as f:
 
 To begin, clone this repository locally
 ```bash
-git clone git@github.com:allenai/ai2thor-rearrangement.git
+git clone #TODO
 ```
 <details>
 <summary><b>See here for a summary of the most important files/directories in this repository</b> </summary> 
