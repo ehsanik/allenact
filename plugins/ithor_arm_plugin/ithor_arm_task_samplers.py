@@ -1,4 +1,4 @@
-import copy
+"""Task Samplers for the task of ArmPointNav"""
 import json
 import random
 from typing import List, Dict, Optional, Any, Union
@@ -6,8 +6,8 @@ import gym
 from core.base_abstractions.task import Task
 from plugins.ithor_arm_plugin.arm_calculation_utils import initialize_arm
 
-from plugins.ithor_arm_plugin.ithor_arm_tasks import AbstractPickUpDropOffTask, WDoneActionTask
-from plugins.ithor_arm_plugin.ithor_arm_environment import ArmTHOREnvironment
+from plugins.ithor_arm_plugin.ithor_arm_tasks import AbstractPickUpDropOffTask, ArmPointNavTask
+from plugins.ithor_arm_plugin.ithor_arm_environment import ManipulaTHOREnvironment
 from core.base_abstractions.sensor import Sensor
 from core.base_abstractions.task import TaskSampler
 from utils.experiment_utils import set_deterministic_cudnn, set_seed
@@ -42,7 +42,7 @@ class AbstractMidLevelArmTaskSampler(TaskSampler):
         self.env_args = env_args
         self.scenes = scenes
         self.grid_size = 0.25
-        self.env: Optional[ArmTHOREnvironment] = None
+        self.env: Optional[ManipulaTHOREnvironment] = None
         self.sensors = sensors
         self.max_steps = max_steps
         self._action_space = action_space
@@ -71,8 +71,8 @@ class AbstractMidLevelArmTaskSampler(TaskSampler):
         self.cap_training = kwargs['cap_training']
 
 
-    def _create_environment(self, **kwargs) -> ArmTHOREnvironment:
-        env = ArmTHOREnvironment(
+    def _create_environment(self, **kwargs) -> ManipulaTHOREnvironment:
+        env = ManipulaTHOREnvironment(
             make_agents_visible=False,
             object_open_speed=0.05,
             env_args=self.env_args,
@@ -116,7 +116,7 @@ class AbstractMidLevelArmTaskSampler(TaskSampler):
 
 
 
-class PickupDropOffGeneralSampler(AbstractMidLevelArmTaskSampler):
+class SimpleArmPointNavGeneralSampler(AbstractMidLevelArmTaskSampler):
 
     _TASK_TYPE = AbstractPickUpDropOffTask
 
@@ -125,7 +125,7 @@ class PickupDropOffGeneralSampler(AbstractMidLevelArmTaskSampler):
             **kwargs
     ) -> None:
 
-        super(PickupDropOffGeneralSampler, self).__init__(**kwargs)
+        super(SimpleArmPointNavGeneralSampler, self).__init__(**kwargs)
         self.all_possible_points = []
         for scene in self.scenes:
             for object in self.objects:
@@ -270,14 +270,14 @@ class PickupDropOffGeneralSampler(AbstractMidLevelArmTaskSampler):
 
         return object_to_data_id
 
-class RandomAgentWDoneActionTaskSampler(PickupDropOffGeneralSampler):
-    _TASK_TYPE = WDoneActionTask
+class ArmPointNavTaskSampler(SimpleArmPointNavGeneralSampler):
+    _TASK_TYPE = ArmPointNavTask
     def __init__(
             self,
             **kwargs
     ) -> None:
 
-        super(RandomAgentWDoneActionTaskSampler, self).__init__(**kwargs)
+        super(ArmPointNavTaskSampler, self).__init__(**kwargs)
         possible_initial_locations = 'datasets/ithor-armnav/valid_agent_initial_locations.json'
         if self.sampler_mode == 'test':
             possible_initial_locations = 'datasets/ithor-armnav/deterministic_valid_agent_initial_locations.json'

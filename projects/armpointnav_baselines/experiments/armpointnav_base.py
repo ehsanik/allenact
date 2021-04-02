@@ -7,7 +7,7 @@ from core.base_abstractions.sensor import Sensor
 from utils.experiment_utils import Builder
 
 
-class ArmNavBaseConfig(ExperimentConfig, ABC):
+class ArmPointNavBaseConfig(ExperimentConfig, ABC):
     """The base object navigation configuration file."""
 
     ADVANCE_SCENE_ROLLOUT_PERIOD: Optional[int] = None

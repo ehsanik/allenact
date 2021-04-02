@@ -23,8 +23,8 @@ from core.models.basic_models import SimpleCNN, RNNStateEncoder
 from utils.net_utils import input_embedding_net
 
 
-class ArmNavBaselineActorCritic(ActorCriticModel[CategoricalDistr]):
-    """Baseline recurrent actor critic model for armnav task.
+class ArmPointNavBaselineActorCritic(ActorCriticModel[CategoricalDistr]):
+    """Baseline recurrent actor critic model for armpointnav task.
 
     # Attributes
     action_space : The space of actions available to the agent. Currently only discrete

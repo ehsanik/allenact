@@ -3,32 +3,32 @@ import gym
 
 from plugins.ithor_arm_plugin.ithor_arm_constants import ENV_ARGS
 from plugins.ithor_arm_plugin.ithor_arm_sensors import RelativeAgentArmToObjectSensor, RelativeObjectToGoalSensor, PickedUpObjSensor, DepthSensorThor
-from plugins.ithor_arm_plugin.ithor_arm_task_samplers import RandomAgentWDoneActionTaskSampler, WDoneActionTaskSampler
+from plugins.ithor_arm_plugin.ithor_arm_task_samplers import ArmPointNavTaskSampler, WDoneActionTaskSampler
 
-from projects.armnav_baselines.experiments.ithor.armnav_ithor_base import (
-    ArmNaviThorBaseConfig,
+from projects.armpointnav_baselines.experiments.ithor.armpointnav_ithor_base import (
+    ArmPointNaviThorBaseConfig,
 )
-from projects.armnav_baselines.experiments.armnav_mixin_ddppo import (
-    ArmNavMixInPPOConfig,
+from projects.armpointnav_baselines.experiments.armpointnav_mixin_ddppo import (
+    ArmPointNavMixInPPOConfig,
 )
-from projects.armnav_baselines.experiments.armnav_mixin_simplegru import (
-    ArmNavMixInSimpleGRUConfig,
+from projects.armpointnav_baselines.experiments.armpointnav_mixin_simplegru import (
+    ArmPointNavMixInSimpleGRUConfig,
 )
 import torch.nn as nn
 
-from projects.armnav_baselines.models.disjoint_arm_nav_models import DisjointArmNavBaselineActorCritic
+from projects.armpointnav_baselines.models.disjoint_arm_pointnav_models import DisjointArmPointNavBaselineActorCritic
 
 
-class ArmNavDisjointDepth(
-    ArmNaviThorBaseConfig, ArmNavMixInPPOConfig, ArmNavMixInSimpleGRUConfig,
+class ArmPointNavDisjointDepth(
+    ArmPointNaviThorBaseConfig, ArmPointNavMixInPPOConfig, ArmPointNavMixInSimpleGRUConfig,
 ):
     """An Object Navigation experiment configuration in iThor with RGB
     input."""
 
     SENSORS = [
         DepthSensorThor(
-            height=ArmNaviThorBaseConfig.SCREEN_SIZE,
-            width=ArmNaviThorBaseConfig.SCREEN_SIZE,
+            height=ArmPointNaviThorBaseConfig.SCREEN_SIZE,
+            width=ArmPointNaviThorBaseConfig.SCREEN_SIZE,
             use_normalization=True,
             uuid="depth_lowres",
         ),
@@ -38,7 +38,7 @@ class ArmNavDisjointDepth(
     ]
 
     MAX_STEPS = 200
-    TASK_SAMPLER = RandomAgentWDoneActionTaskSampler
+    TASK_SAMPLER = ArmPointNavTaskSampler
 
 
     def __init__(self):
@@ -50,7 +50,7 @@ class ArmNavDisjointDepth(
 
     @classmethod
     def create_model(cls, **kwargs) -> nn.Module:
-        return DisjointArmNavBaselineActorCritic(
+        return DisjointArmPointNavBaselineActorCritic(
             action_space=gym.spaces.Discrete(len(cls.TASK_SAMPLER._TASK_TYPE.class_action_names())),
             observation_space=kwargs["sensor_preprocessor_graph"].observation_spaces,
             hidden_size=512,

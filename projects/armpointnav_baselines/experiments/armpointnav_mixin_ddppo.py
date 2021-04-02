@@ -3,11 +3,11 @@ from torch.optim.lr_scheduler import LambdaLR
 
 from core.algorithms.onpolicy_sync.losses import PPO
 from core.algorithms.onpolicy_sync.losses.ppo import PPOConfig
-from projects.armnav_baselines.experiments.armnav_base import ArmNavBaseConfig
+from projects.armpointnav_baselines.experiments.armpointnav_base import ArmPointNavBaseConfig
 from utils.experiment_utils import Builder, PipelineStage, TrainingPipeline, LinearDecay
 
 
-class ArmNavMixInPPOConfig(ArmNavBaseConfig):
+class ArmPointNavMixInPPOConfig(ArmPointNavBaseConfig):
     def training_pipeline(self, **kwargs):
         ppo_steps = int(300000000)
         lr = 3e-4

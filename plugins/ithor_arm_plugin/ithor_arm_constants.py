@@ -1,3 +1,4 @@
+"""Constant values and hyperparameters that are used by the environment."""
 import ai2thor
 import ai2thor.fifo_server
 

@@ -1,13 +1,11 @@
-import copy
-import random
-import warnings
+"""Task Definions for the task of ArmPointNav"""
+
 from typing import Dict, Tuple, List, Any, Optional
 
 import gym
 import numpy as np
 
-from plugins.ithor_arm_plugin.ithor_arm_environment import ArmTHOREnvironment
-from utils.debugger_util import ForkedPdb
+from plugins.ithor_arm_plugin.ithor_arm_environment import ManipulaTHOREnvironment
 from plugins.ithor_arm_plugin.ithor_arm_constants import MOVE_ARM_CONSTANT, MOVE_ARM_HEIGHT_P, MOVE_ARM_HEIGHT_M, MOVE_ARM_X_P, MOVE_ARM_X_M, MOVE_ARM_Y_P, MOVE_ARM_Y_M, MOVE_ARM_Z_P, MOVE_ARM_Z_M, MOVE_AHEAD, ROTATE_RIGHT, ROTATE_LEFT, PICKUP, DONE
 from plugins.ithor_arm_plugin.ithor_arm_viz import LoggerVisualizer
 
@@ -21,13 +19,13 @@ def position_distance(s1, s2):
     position2 = s2['position']
     return ((position1['x'] - position2['x'])**2 + (position1['y'] - position2['y'])**2 + (position1['z'] - position2['z'])**2) ** 0.5
 
-class AbstractPickUpDropOffTask(Task[ArmTHOREnvironment]):
+class AbstractPickUpDropOffTask(Task[ManipulaTHOREnvironment]):
 
     _actions = (MOVE_ARM_HEIGHT_P, MOVE_ARM_HEIGHT_M, MOVE_ARM_X_P, MOVE_ARM_X_M, MOVE_ARM_Y_P, MOVE_ARM_Y_M, MOVE_ARM_Z_P, MOVE_ARM_Z_M, MOVE_AHEAD, ROTATE_RIGHT, ROTATE_LEFT)
 
     def __init__(
             self,
-            env: ArmTHOREnvironment,
+            env: ManipulaTHOREnvironment,
             sensors: List[Sensor],
             task_info: Dict[str, Any],
             max_steps: int,
@@ -206,7 +204,7 @@ class AbstractPickUpDropOffTask(Task[ArmTHOREnvironment]):
         """Compute the reward after having taken a step."""
         raise Exception('Not implemented')
 
-class WDoneActionTask(AbstractPickUpDropOffTask):
+class ArmPointNavTask(AbstractPickUpDropOffTask):
     _actions = (MOVE_ARM_HEIGHT_P, MOVE_ARM_HEIGHT_M, MOVE_ARM_X_P, MOVE_ARM_X_M, MOVE_ARM_Y_P, MOVE_ARM_Y_M, MOVE_ARM_Z_P, MOVE_ARM_Z_M, MOVE_AHEAD, ROTATE_RIGHT, ROTATE_LEFT, PICKUP, DONE)
 
     def _step(self, action: int) -> RLStepResult:

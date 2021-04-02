@@ -3,33 +3,33 @@ import gym
 
 from plugins.ithor_arm_plugin.ithor_arm_constants import ENV_ARGS
 from plugins.ithor_arm_plugin.ithor_arm_sensors import RelativeAgentArmToObjectSensor, RelativeObjectToGoalSensor, PickedUpObjSensor, DepthSensorThor, NoVisionSensorThor
-from plugins.ithor_arm_plugin.ithor_arm_task_samplers import RandomAgentWDoneActionTaskSampler, WDoneActionTaskSampler
+from plugins.ithor_arm_plugin.ithor_arm_task_samplers import ArmPointNavTaskSampler, WDoneActionTaskSampler
 from plugins.ithor_plugin.ithor_sensors import RGBSensorThor
 
-from projects.armnav_baselines.experiments.ithor.armnav_ithor_base import (
-    ArmNaviThorBaseConfig,
+from projects.armpointnav_baselines.experiments.ithor.armpointnav_ithor_base import (
+    ArmPointNaviThorBaseConfig,
 )
-from projects.armnav_baselines.experiments.armnav_mixin_ddppo import (
-    ArmNavMixInPPOConfig,
+from projects.armpointnav_baselines.experiments.armpointnav_mixin_ddppo import (
+    ArmPointNavMixInPPOConfig,
 )
-from projects.armnav_baselines.experiments.armnav_mixin_simplegru import (
-    ArmNavMixInSimpleGRUConfig,
+from projects.armpointnav_baselines.experiments.armpointnav_mixin_simplegru import (
+    ArmPointNavMixInSimpleGRUConfig,
 )
 import torch.nn as nn
 
-from projects.armnav_baselines.models.arm_nav_models import ArmNavBaselineActorCritic
+from projects.armpointnav_baselines.models.arm_pointnav_models import ArmPointNavBaselineActorCritic
 
 
-class ArmNavRGB(
-    ArmNaviThorBaseConfig, ArmNavMixInPPOConfig, ArmNavMixInSimpleGRUConfig,
+class ArmPointNavRGB(
+    ArmPointNaviThorBaseConfig, ArmPointNavMixInPPOConfig, ArmPointNavMixInSimpleGRUConfig,
 ):
     """An Object Navigation experiment configuration in iThor with RGB
     input."""
 
     SENSORS = [
         RGBSensorThor(
-            height=ArmNaviThorBaseConfig.SCREEN_SIZE,
-            width=ArmNaviThorBaseConfig.SCREEN_SIZE,
+            height=ArmPointNaviThorBaseConfig.SCREEN_SIZE,
+            width=ArmPointNaviThorBaseConfig.SCREEN_SIZE,
             use_resnet_normalization=True,
             uuid="rgb_lowres",
         ),
@@ -39,7 +39,7 @@ class ArmNavRGB(
     ]
 
     MAX_STEPS = 200
-    TASK_SAMPLER = RandomAgentWDoneActionTaskSampler #
+    TASK_SAMPLER = ArmPointNavTaskSampler #
 
 
     def __init__(self):

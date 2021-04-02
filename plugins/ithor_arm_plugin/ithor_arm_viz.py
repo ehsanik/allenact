@@ -1,3 +1,4 @@
+"""Utility functions and classes for visualization and logging"""
 import os
 from datetime import datetime
 import numpy as np
@@ -5,8 +6,7 @@ import numpy as np
 import imageio
 
 from plugins.ithor_arm_plugin.arm_calculation_utils import initialize_arm
-from plugins.ithor_arm_plugin.ithor_arm_constants import ARM_START_POSITIONS, reset_environment_and_additional_commands, transport_wrapper
-from plugins.ithor_arm_plugin.ithor_arm_constants import ADITIONAL_ARM_ARGS
+from plugins.ithor_arm_plugin.ithor_arm_constants import reset_environment_and_additional_commands, transport_wrapper
 from utils.debugger_util import ForkedPdb
 import cv2
 

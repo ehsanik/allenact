@@ -15,17 +15,17 @@ from core.base_abstractions.preprocessor import SensorPreprocessorGraph
 from core.base_abstractions.sensor import SensorSuite, ExpertActionSensor
 from core.base_abstractions.task import TaskSampler
 from plugins.ithor_arm_plugin.ithor_arm_constants import ENV_ARGS
-from plugins.ithor_arm_plugin.ithor_arm_task_samplers import PickupDropOffGeneralSampler
+from plugins.ithor_arm_plugin.ithor_arm_task_samplers import SimpleArmPointNavGeneralSampler
 from plugins.ithor_arm_plugin.ithor_arm_viz import ImageVisualizer, TestMetricLogger
-from projects.armnav_baselines.experiments.armnav_base import ArmNavBaseConfig
+from projects.armpointnav_baselines.experiments.armpointnav_base import ArmPointNavBaseConfig
 from utils.debugger_util import ForkedPdb
 from utils.experiment_utils import evenly_distribute_count_into_bins
 from utils.system import get_logger
 
-class ArmNavThorBaseConfig(ArmNavBaseConfig, ABC):
+class ArmPointNavThorBaseConfig(ArmPointNavBaseConfig, ABC):
     """The base config for all iTHOR PointNav experiments."""
 
-    TASK_SAMPLER = PickupDropOffGeneralSampler
+    TASK_SAMPLER = SimpleArmPointNavGeneralSampler
     VISUALIZE = False
     if platform.system() == 'Darwin':
         VISUALIZE = True

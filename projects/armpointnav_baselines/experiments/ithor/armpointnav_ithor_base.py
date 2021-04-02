@@ -3,12 +3,12 @@ from abc import ABC
 
 from constants import ABS_PATH_OF_TOP_LEVEL_DIR
 from plugins.ithor_arm_plugin.ithor_arm_constants import TRAIN_OBJECTS, TEST_OBJECTS
-from projects.armnav_baselines.experiments.armnav_thor_base import (
-    ArmNavThorBaseConfig,
+from projects.armpointnav_baselines.experiments.armpointnav_thor_base import (
+    ArmPointNavThorBaseConfig,
 )
 
 
-class ArmNaviThorBaseConfig(ArmNavThorBaseConfig, ABC):
+class ArmPointNaviThorBaseConfig(ArmPointNavThorBaseConfig, ABC):
     """The base config for all iTHOR ObjectNav experiments."""
 
     NUM_PROCESSES = 40

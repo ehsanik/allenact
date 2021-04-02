@@ -25,8 +25,8 @@ from utils.debugger_util import ForkedPdb, is_weight_nan
 from utils.net_utils import input_embedding_net
 
 
-class DisjointArmNavBaselineActorCritic(ActorCriticModel[CategoricalDistr]):
-    """Baseline recurrent actor critic model for object-navigation.
+class DisjointArmPointNavBaselineActorCritic(ActorCriticModel[CategoricalDistr]):
+    """ Disjoint Baseline recurrent actor critic model for armpointnav.
 
     # Attributes
     action_space : The space of actions available to the agent. Currently only discrete

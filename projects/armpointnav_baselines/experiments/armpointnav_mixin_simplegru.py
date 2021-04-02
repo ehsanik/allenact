@@ -9,14 +9,14 @@ from core.base_abstractions.preprocessor import ResNetPreprocessor
 from core.base_abstractions.sensor import RGBSensor, DepthSensor
 from plugins.ithor_plugin.ithor_sensors import GoalObjectTypeThorSensor
 from plugins.ithor_arm_plugin.ithor_arm_tasks import AbstractPickUpDropOffTask
-from projects.armnav_baselines.experiments.armnav_base import ArmNavBaseConfig
-from projects.armnav_baselines.models.arm_nav_models import (
-    ArmNavBaselineActorCritic,
+from projects.armpointnav_baselines.experiments.armpointnav_base import ArmPointNavBaseConfig
+from projects.armpointnav_baselines.models.arm_pointnav_models import (
+    ArmPointNavBaselineActorCritic,
 )
 from utils.experiment_utils import Builder
 
 
-class ArmNavMixInSimpleGRUConfig(ArmNavBaseConfig):
+class ArmPointNavMixInSimpleGRUConfig(ArmPointNavBaseConfig):
     @classmethod
     def preprocessors(cls) -> Sequence[Union[Preprocessor, Builder[Preprocessor]]]:
         preprocessors = []
@@ -31,7 +31,7 @@ class ArmNavMixInSimpleGRUConfig(ArmNavBaseConfig):
             None,
         )
 
-        return ArmNavBaselineActorCritic(
+        return ArmPointNavBaselineActorCritic(
             action_space=gym.spaces.Discrete(len(cls.TASK_SAMPLER._TASK_TYPE.class_action_names())),
             observation_space=kwargs["sensor_preprocessor_graph"].observation_spaces,
             hidden_size=512,
