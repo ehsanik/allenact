@@ -12,34 +12,13 @@ This code base is based on <a href=https://allenact.org/>AllenAct</a> framework 
 <div class="toc">
 <ul>
 <li><a href="#-installation">💻 Installation</a></li>
-<li><a href="#-rearrangement-task-description">📝 Rearrangement Task Description</a></li>
-<li><a href="#-challenge-tracks-and-datasets">🛤️ Challenge Tracks and Datasets</a><ul>
-<li><a href="#%EF%B8%8F%EF%B8%8F-the-1--and-2-phase-tracks">☝️+✌️ The 1- and 2-Phase Tracks</a></li>
-<li><a href="#-datasets">📊 Datasets</a></li>
-</ul>
-</li>
-<li><a href="#-submitting-to-the-leaderboard">🛤️ Submitting to the Leaderboard</a></li>
-<li><a href="#-allowed-observations">🖼️ Allowed Observations</a></li>
+<li><a href="#-armpointnav-task-description">📝 ArmPointNav Task Description</a></li>
+<li><a href="#-dataset">📊 Dataset</a></li>
+<li><a href="#-sensory-observations">🖼️ Sensory Observations</a></li>
 <li><a href="#-allowed-actions">🏃 Allowed Actions</a></li>
-<li><a href="#%EF%B8%8F-setting-up-rearrangement">🍽️ Setting up Rearrangement</a><ul>
-<li><a href="#-learning-by-example">✨ Learning by example</a></li>
-<li><a href="#-the-rearrange-thor-environment-class">🌎 The Rearrange THOR Environment class</a></li>
-<li><a href="#-the-rearrange-task-sampler-class">🏒 The Rearrange Task Sampler class</a></li>
-<li><a href="#-the-walkthrough-task-and-unshuffle-task-classes">🚶🔀 The Walkthrough Task and Unshuffle Task classes</a></li>
-</ul>
-</li>
-<li><a href="#-object-poses">🗺️ Object Poses</a></li>
-<li><a href="#-evaluation">🏆 Evaluation</a><ul>
-<li><a href="#-when-are-poses-approximately-equal">📏 When are poses (approximately) equal?</a></li>
-<li><a href="#-computing-metrics">💯 Computing metrics</a></li>
-</ul>
-</li>
-<li><a href="#-training-baseline-models-with-allenact">🏋 Training Baseline Models with AllenAct</a><ul>
-<li><a href="#-pretrained-1-phase-model">💪 Pretrained 1-Phase Model</a></li>
-</ul>
-</li>
-</ul>
-</li>
+<li><a href="#-defining-a-new-task">✨Defining a New Task</a></li>
+<li><a href="#-training-an-agent">🏋 Training an Agent</a></li>
+<li><a href="#-evaluating-a-pre-trained-agent">💪 Evaluating a Pre-Trained Agent</a></li>
 </ul>
 </div>
 
@@ -67,8 +46,8 @@ Here's a quick summary of the most important files/directories in this repositor
     - `ithor_arm_sensors.py` - Sensors which provide observations to our agents during training. E.g. the
       `RGBSensor` obtains RGB images from the environment and returns them for use by the agent. 
     - `ithor_arm_tasks.py` - Definition of the `ArmPointNav` task, the reward definition and the function for calculating the goal achievement. 
-    - `ithor_arm_task_samplers.py` - Definition of the `ArmPointNavTaskSampler` samplers. Initializing the sampler, reading the json files from the dataset and randomly choosing a task datapoint from the dataset is defined in this file. 
-    - `ithor_arm_viz.py` - Standalone utility functions for visualization and logging the outputs of the models.
+    - `ithor_arm_task_samplers.py` - Definition of the `ArmPointNavTaskSampler` samplers. Initializing the sampler, reading the json files from the dataset and randomly choosing a task is defined in this file. 
+    - `ithor_arm_viz.py` - Utility functions for visualization and logging the outputs of the models.
 
 </p>
 </details>
@@ -88,7 +67,7 @@ pip install -r requirements.txt
 
 <img src="media/armpointnav_task.png" alt="" width="100%">
 
-**Overview 🤖.** ArmPointNav is the goal of addressing the problem of visual object manipulation, where the task is to move an object between two locations in a scene. Operating in visually rich and complex environments, generalizing to unseen environments and objects, avoiding collisions with objects and structures in the scene, and visual planning to reach the destination are among the major challenges of this task. The example illustrates a sequence of actions taken a by a virtual robot within the ManipulaTHOR environment for picking up a vase from the shelf and stack it on a plate on the countertop.
+ArmPointNav is the goal of addressing the problem of visual object manipulation, where the task is to move an object between two locations in a scene. Operating in visually rich and complex environments, generalizing to unseen environments and objects, avoiding collisions with objects and structures in the scene, and visual planning to reach the destination are among the major challenges of this task. The example illustrates a sequence of actions taken a by a virtual robot within the ManipulaTHOR environment for picking up a vase from the shelf and stack it on a plate on the countertop.
    
 ## 📊 Dataset
 
@@ -129,7 +108,7 @@ A total of 13 actions are available to our agents, these include:
 
 ## ✨ Defining a New Task
 
-### 🌎 The ManipulaTHOR Environment class
+### The ManipulaTHOR Environment class
 
 The `rearrange.environment.RearrangeTHOREnvironment` class provides a wrapper around the AI2-THOR environment
 and is designed to 
@@ -138,7 +117,7 @@ and is designed to
   how close the current state of the environment is to the goal state.
 1. Provide an API with which the agent may interact with the environment.
 
-### 🏒 The ArmPointNav Task Sampler class
+### The ArmPointNav Task Sampler class
 
 You'll notice that the above `RearrangeTHOREnvironment` is not explicitly instantiated by the `example.py`
 script and, instead, we create `rearrange.tasks.RearrangeTaskSampler` objects using the
@@ -151,7 +130,7 @@ tasks for our agent to complete when calling the `next_task` method. During trai
 indefinitely while, during validation or testing, the tasks will only be sampled until the validation/test datasets
 are exhausted. This sampling is best understood by example so please go over the `example.py` file.
 
-### 🚶🔀 The ArmPointNav Task classes
+### The ArmPointNav Task classes
 
 As described above, the `RearrangeTaskSampler` samples tasks for our agent to complete, these tasks correspond
 to instantiations of the `rearrange.tasks.WalkthroughTask` and `rearrange.tasks.UnshuffleTask` classes. For the 2-phase
@@ -159,13 +138,13 @@ challenge track, the `RearrangeTaskSampler` will first sample a new `Walkthrough
 corresponding `UnshuffleTask` where the agent must return the objects to their poses at the start of the
 `WalkthroughTask`. 
 
-## Training An Agent
+## 🏋 Training An Agent
 
 for training add experiments in experiments/ithor
 what to define
 the list of current experiment options
 
-## Evaluating A Pre-trained Agent 
+## 💪 Evaluating A Pre-Trained Agent 
 
 To reproduce the numbers in the paper...
 how to download the models in pretrained_model_ckpts....
