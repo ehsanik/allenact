@@ -86,5 +86,5 @@ def transport_wrapper(controller, target_object, target_location):
 VALID_OBJECT_LIST = ['Knife', 'Bread', 'Fork', 'Potato', 'SoapBottle', 'Pan', 'Plate', 'Tomato', 'Egg', 'Pot', 'Spatula', 'Cup', 'Bowl', 'SaltShaker', 'PepperShaker', 'Lettuce', 'ButterKnife', 'Apple', 'DishSponge', 'Spoon', 'Mug']
 
 import json
-with open('datasets/ithor-armnav/ideal_pose.json') as f:
+with open('datasets/apnd-dataset/starting_pose.json') as f:
     ARM_START_POSITIONS = json.load(f)

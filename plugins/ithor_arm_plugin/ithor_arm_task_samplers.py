@@ -129,7 +129,7 @@ class SimpleArmPointNavGeneralSampler(AbstractMidLevelArmTaskSampler):
         self.all_possible_points = []
         for scene in self.scenes:
             for object in self.objects:
-                valid_position_adr = 'datasets/ithor-armnav/pruned_v2_valid_{}_positions_in_{}.json'.format(object, scene)
+                valid_position_adr = 'datasets/apnd-dataset/valid_object_positions/valid_{}_positions_in_{}.json'.format(object, scene)
                 try:
                     with open(valid_position_adr) as f:
                         data_points = json.load(f)
@@ -153,7 +153,7 @@ class SimpleArmPointNavGeneralSampler(AbstractMidLevelArmTaskSampler):
             self.deterministic_data_list = []
             for scene in self.scenes:
                 for object in self.objects:
-                    valid_position_adr = 'datasets/ithor-armnav/pruned_v2_hard_w_nav_tasks_{}_positions_in_{}.json'.format(object, scene)
+                    valid_position_adr = 'datasets/apnd-dataset/deterministic_tasks/tasks_{}_positions_in_{}.json'.format(object, scene)
                     try:
                         with open(valid_position_adr) as f:
                             data_points = json.load(f)
@@ -278,9 +278,9 @@ class ArmPointNavTaskSampler(SimpleArmPointNavGeneralSampler):
     ) -> None:
 
         super(ArmPointNavTaskSampler, self).__init__(**kwargs)
-        possible_initial_locations = 'datasets/ithor-armnav/valid_agent_initial_locations.json'
+        possible_initial_locations = 'datasets/apnd-dataset/valid_agent_initial_locations.json'
         if self.sampler_mode == 'test':
-            possible_initial_locations = 'datasets/ithor-armnav/deterministic_valid_agent_initial_locations.json'
+            possible_initial_locations = 'datasets/apnd-dataset/deterministic_valid_agent_initial_locations.json'
         with open(possible_initial_locations) as f:
             self.possible_agent_reachable_poses = json.load(f)
 
