@@ -3,7 +3,7 @@ import gym
 
 from plugins.ithor_arm_plugin.ithor_arm_constants import ENV_ARGS
 from plugins.ithor_arm_plugin.ithor_arm_sensors import RelativeAgentArmToObjectSensor, RelativeObjectToGoalSensor, PickedUpObjSensor, DepthSensorThor
-from plugins.ithor_arm_plugin.ithor_arm_task_samplers import ArmPointNavTaskSampler, WDoneActionTaskSampler
+from plugins.ithor_arm_plugin.ithor_arm_task_samplers import ArmPointNavTaskSampler
 from plugins.ithor_arm_plugin.ithor_arm_tasks import AbstractPickUpDropOffTask, ArmPointNavTask
 from plugins.ithor_plugin.ithor_sensors import RGBSensorThor
 

@@ -1,5 +1,5 @@
 
-from plugins.ithor_arm_plugin.ithor_arm_task_samplers import ArmPointNavTaskSampler, WDoneActionTaskSampler
+from plugins.ithor_arm_plugin.ithor_arm_task_samplers import ArmPointNavTaskSampler
 
 from projects.armpointnav_baselines.experiments.ithor.armpointnav_ithor_base import (
     ArmPointNaviThorBaseConfig,

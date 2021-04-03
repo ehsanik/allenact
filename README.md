@@ -108,44 +108,34 @@ A total of 13 actions are available to our agents, these include:
 
 ## ✨ Defining a New Task
 
-### The ManipulaTHOR Environment class
-
-The `rearrange.environment.RearrangeTHOREnvironment` class provides a wrapper around the AI2-THOR environment
-and is designed to 
-1. Make it easy to set up a AI2-THOR scene in a particular state ready for rearrangement.
-1. Provides utilities to make it easy to evaluate (see e.g. the `poses` and  `compare_poses` methods)
-  how close the current state of the environment is to the goal state.
-1. Provide an API with which the agent may interact with the environment.
-
-### The ArmPointNav Task Sampler class
-
-You'll notice that the above `RearrangeTHOREnvironment` is not explicitly instantiated by the `example.py`
-script and, instead, we create `rearrange.tasks.RearrangeTaskSampler` objects using the
-`TwoPhaseRGBBaseExperimentConfig.make_sampler_fn` and `OnePhaseRGBBaseExperimentConfig.make_sampler_fn`.
-This is because the `RearrangeTHOREnvironment` is very flexible and doesn't know anything about
-training/validation/test datasets, the types of actions we want our agent to be restricted to use,
-or precisely which types of sensor observations we want to give our agents (e.g. RGB images, depth maps, etc).
-All of these extra details are managed by the `RearrangeTaskSampler` which iteratively creates new
-tasks for our agent to complete when calling the `next_task` method. During training, these new tasks can be sampled
-indefinitely while, during validation or testing, the tasks will only be sampled until the validation/test datasets
-are exhausted. This sampling is best understood by example so please go over the `example.py` file.
-
-### The ArmPointNav Task classes
-
-As described above, the `RearrangeTaskSampler` samples tasks for our agent to complete, these tasks correspond
-to instantiations of the `rearrange.tasks.WalkthroughTask` and `rearrange.tasks.UnshuffleTask` classes. For the 2-phase
-challenge track, the `RearrangeTaskSampler` will first sample a new `WalkthroughTask` after which it will sample a 
-corresponding `UnshuffleTask` where the agent must return the objects to their poses at the start of the
-`WalkthroughTask`. 
+In order to define a new task, redefine the rewarding, try a new model, or change the enviornment setup, checkout our tutorial on defining a new task <a href="DefineTask.md">here</a>.
 
 ## 🏋 Training An Agent
 
-for training add experiments in experiments/ithor
-what to define
-the list of current experiment options
+You can train a model with a specific experiment setup by running one of the experiments below:
+
+```
+python3 main.py -o experiment_output -s 1 -b projects/armpointnav_baselines/experiments/ithor/ <EXPERIMENT-NAME>
+```
+
+Where `<EXPERIMENT-NAME>` can be one of the options below:
+
+```
+armpointnav_disjoint_depth
+armpointnav_rgbdepth
+armpointnav_no_vision
+armpointnav_rgb
+armpointnav_depth
+``` 
 
 ## 💪 Evaluating A Pre-Trained Agent 
 
-To reproduce the numbers in the paper...
-how to download the models in pretrained_model_ckpts....
-list of scripts to run in a file in pretrained
+To evaluate a pre-trained model, (for example to reproduce the numbers in the paper), you can add `--mode test -c <WEIGHT-ADDRESS>` to the end of the command you ran for training. 
+
+In order to reproduce the numbers in the paper, you need to download the pretrained models from <a href="#TODO">here</a> and extract them to pretrained_models. The full list of experiments and their corresponding trained weights can be found <a href="pretrained_models/EvaluateModels.md">here</a>.
+
+```
+python3 main.py -o experiment_output -s 1 -b projects/armpointnav_baselines/experiments/ithor/ armpointnav_depth --mode test -c /Users/kianae/Desktop/important_saved_models/depth_random_agent_vs12/exp_RealDepthRandomAgentLocArmNav_real_random_agent_depth__stage_00__steps_000022184680.pt
+```
+
+#TODO citation

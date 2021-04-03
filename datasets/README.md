@@ -18,6 +18,8 @@ The initial location of the object can pose a variety of challenges. In (a) the 
 
 ## 🗂️ Dataset Hierarchy
 
+Below you can find the description and usecase of each of the files in the dataset.
+
 ```
 apnd-dataset
 └── valid_object_positions ----- Pool of potential object positions
