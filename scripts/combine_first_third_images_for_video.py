@@ -52,10 +52,10 @@ def generate_video():
     for video_ind in all_video_and_index:
         # indices = all_video_and_index[video_ind]
         # indices.sort()
-        os.system("ffmpeg -r {} -i {}/{}_%d.png -vcodec mpeg4 -y {}.mp4".format(RATE, combined_folder, video_ind, os.path.join(video_folder, video_ind)))
+        os.system("ffmpeg -r {} -i {}/{}_%d.png -vcodec mpeg4 -q:v 3 -y {}.mp4".format(RATE, combined_folder, video_ind, os.path.join(video_folder, video_ind)))
         # for i in indices:
         #     img_name = os.path.join(combined_folder, '{}_{}.png'.format(video_ind, i))
 
-generate_combined()
+# generate_combined()
 generate_video()
 pdb.set_trace()
