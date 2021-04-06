@@ -1,6 +1,7 @@
 # <a href="#TODO">ManipulaTHOR: A Framework for Visual Object Manipulation</a>
 #### Kiana Ehsani, Winson Han, Alvaro Herrasti, Eli VanderBilt, Luca Weihs, Eric Kolve, Aniruddha Kembhavi, Roozbeh Mottaghi
 #### (Oral Presentation at CVPR 2021)
+#### <a href="https://prior.allenai.org/projects/manipulathor">(Project Page)</a>--<a href="http://ai2thor.allenai.org/manipulathor">(Framework)</a>--<a href="#TODO">(Video)</a>--<a href="#TODO">(Slides)</a> 
 
 We present <b>ManipulaTHOR</b>, an extension to the AI2-THOR framework that adds arms to its agents. Our framework offers <b>powerful physics engine</b>, variety of <b>realistic indoor scenes</b>, large asset library of open source <b>manipulable objects</b> as well as articulated receptacles. ManipulaTHOR allows agents to interact with objects at a <b>lower level via their arm manipulators</b>, and thus opens up a whole new direction for Embodied AI research. The sensors that are available for use are RGB image, depth frame, GPS, agent’s location, and arm configuration.
 
