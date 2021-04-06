@@ -8,6 +8,19 @@ Using ManipulaTHOR, we address the problem of visual object manipulation, <b>Arm
 
 This code base is based on <a href=https://allenact.org/>AllenAct</a> framework and the majority of the core training algorithms and pipelines are borrowed from <a href=https://github.com/allenai/allenact>AllenAct code base</a>. 
 
+### Citation
+
+If you find this project useful in your research, please consider citing:
+
+```
+   @inproceedings{ehsani2021manipulathor,
+     title={ManipulaTHOR: A Framework for Visual Object Manipulation},
+     author={Ehsani, Kiana and Han, Winson and Herrasti, Alvaro and VanderBilt, Eli and Weihs, Luca and Kolve, Eric and Kembhavi, Aniruddha and Mottaghi, Roozbeh},
+     booktitle={CVPR},
+     year={2021}
+   }
+```
+
 ### Contents
 <div class="toc">
 <ul>
@@ -135,7 +148,5 @@ To evaluate a pre-trained model, (for example to reproduce the numbers in the pa
 In order to reproduce the numbers in the paper, you need to download the pretrained models from <a href="#TODO">here</a> and extract them to pretrained_models. The full list of experiments and their corresponding trained weights can be found <a href="pretrained_models/EvaluateModels.md">here</a>.
 
 ```
-python3 main.py -o experiment_output -s 1 -b projects/armpointnav_baselines/experiments/ithor/ armpointnav_depth --mode test -c /Users/kianae/Desktop/important_saved_models/depth_random_agent_vs12/exp_RealDepthRandomAgentLocArmNav_real_random_agent_depth__stage_00__steps_000022184680.pt
+python3 main.py -o experiment_output -s 1 -b projects/armpointnav_baselines/experiments/ithor/ <EXPERIMENT-NAME> --mode test -c <WEIGHT-ADDRESS>
 ```
-
-#TODO citation
