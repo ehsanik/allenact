@@ -1,6 +1,6 @@
 # Evaluating the Pre-trained Models
 ## Download the Weights
-You can download the weights from <a href="#TODO">here</a>. After downloading the weights, extract them to `pretrained_models/saved_checkpoints`.
+You can download the weights from <a href="https://drive.google.com/file/d/1wZi_IL5d7elXLkAb4jOixfY0M6-ZfkGM/view?usp=sharing">here</a>. After downloading the weights, extract them to `pretrained_models/saved_checkpoints`.
 ## Evaluating the Trained Models
 ### Table 1
 #### Test-SeenObj

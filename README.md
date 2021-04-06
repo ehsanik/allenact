@@ -1,4 +1,4 @@
-# ManipulaTHOR: A Framework for Visual Object Manipulation
+# <a href="#TODO">ManipulaTHOR: A Framework for Visual Object Manipulation</a>
 #### Kiana Ehsani, Winson Han, Alvaro Herrasti, Eli VanderBilt, Luca Weihs, Eric Kolve, Aniruddha Kembhavi, Roozbeh Mottaghi
 #### (Oral Presentation at CVPR 2021)
 
@@ -145,7 +145,7 @@ armpointnav_depth
 
 To evaluate a pre-trained model, (for example to reproduce the numbers in the paper), you can add `--mode test -c <WEIGHT-ADDRESS>` to the end of the command you ran for training. 
 
-In order to reproduce the numbers in the paper, you need to download the pretrained models from <a href="#TODO">here</a> and extract them to pretrained_models. The full list of experiments and their corresponding trained weights can be found <a href="pretrained_models/EvaluateModels.md">here</a>.
+In order to reproduce the numbers in the paper, you need to download the pretrained models from <a href="https://drive.google.com/file/d/1wZi_IL5d7elXLkAb4jOixfY0M6-ZfkGM/view?usp=sharing">here</a> and extract them to pretrained_models. The full list of experiments and their corresponding trained weights can be found <a href="pretrained_models/EvaluateModels.md">here</a>.
 
 ```
 python3 main.py -o experiment_output -s 1 -b projects/armpointnav_baselines/experiments/ithor/ <EXPERIMENT-NAME> --mode test -c <WEIGHT-ADDRESS>
