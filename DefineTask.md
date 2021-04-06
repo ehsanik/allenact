@@ -27,7 +27,7 @@ You can find `ArmPointNavTaskSampler` in `plugins/ithor_arm_plugin/ithor_arm_tas
 3. `next_task`: Gets the source and target locations, resets the scene, initializes the agent and transport the object to its initial location.
 
 
-### ArmPointNav Task
+## ArmPointNav Task
 
 You can find `ArmPointNavTask` in `plugins/ithor_arm_plugin/ithor_arm_tasks.py`. This class includes the possible actions, reward definition, metric calculation and recording and calling the appropriate API functions on the environment.
 
