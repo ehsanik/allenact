@@ -3,9 +3,7 @@
 #### (Oral Presentation at CVPR 2021)
 #### <a href="https://prior.allenai.org/projects/manipulathor">(Project Page)</a>--<a href="http://ai2thor.allenai.org/manipulathor">(Framework)</a>--<a href="#TODO">(Video)</a>--<a href="#TODO">(Slides)</a> 
 
-We present <b>ManipulaTHOR</b>, an extension to the AI2-THOR framework that adds arms to its agents. Our framework offers <b>powerful physics engine</b>, variety of <b>realistic indoor scenes</b>, large asset library of open source <b>manipulable objects</b> as well as articulated receptacles. ManipulaTHOR allows agents to interact with objects at a <b>lower level via their arm manipulators</b>, and thus opens up a whole new direction for Embodied AI research. The sensors that are available for use are RGB image, depth frame, GPS, agent’s location, and arm configuration.
-
-Using ManipulaTHOR, we address the problem of visual object manipulation, <b>ArmPointNav</b>, where the goal is to move an object between two locations in a scene. Operating in visually rich and complex environments, generalizing to unseen environments and objects, avoiding collisions with objects and structures in the scene, and visual planning to reach the destination are among the major challenges of this task.
+We present <b>ManipulaTHOR</b>, a framework that facilitates <b>visual manipulation</b> of objects using a robotic arm. Our framework is built upon a <b>physics engine</b> and enables <b>realistic interactions</b> with objects while navigating through scenes and performing tasks. Object manipulation is an established research domain within the robotics community and poses several challenges including <b>avoiding collisions</b>, <b>grasping</b>, and <b>long-horizon planning</b>. Our framework focuses primarily on manipulation in visually rich and <b>complex scenes</b>, <b>joint manipulation and navigation</b> planning, and <b>generalization</b> to unseen environments and objects; challenges that are often overlooked. The framework provides a comprehensive suite of sensory information and motor functions enabling development of robust manipulation agents.
 
 This code base is based on <a href=https://allenact.org/>AllenAct</a> framework and the majority of the core training algorithms and pipelines are borrowed from <a href=https://github.com/allenai/allenact>AllenAct code base</a>. 
 
@@ -135,11 +133,11 @@ python3 main.py -o experiment_output -s 1 -b projects/armpointnav_baselines/expe
 Where `<EXPERIMENT-NAME>` can be one of the options below:
 
 ```
-armpointnav_disjoint_depth
-armpointnav_rgbdepth
-armpointnav_no_vision
-armpointnav_rgb
-armpointnav_depth
+armpointnav_no_vision -- No Vision Baseline
+armpointnav_disjoint_depth -- Disjoint Model Ablation
+armpointnav_rgb -- Our RGB Experiment
+armpointnav_rgbdepth -- Our RGBD Experiment
+armpointnav_depth -- Our Depth Experiment
 ``` 
 
 ## 💪 Evaluating A Pre-Trained Agent 
