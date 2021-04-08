@@ -25,7 +25,7 @@ RATE = 5
 # RATE = 10
 #
 #
-# specific_video = -1
+# specific_video = -1 
 # RATE = 1
 
 if specific_video:
